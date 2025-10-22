@@ -1,0 +1,166 @@
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { useFlash } from "../context/FlashContext";
+import { validateEmail } from "../utils/validation";
+
+const Login = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const { success, error } = useFlash();
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error for this field
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.valid) {
+      newErrors.email = emailValidation.message;
+      console.log("Email validation failed:", emailValidation.message);
+    }
+
+    if (!formData.password || formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters long";
+      console.log("Password validation failed");
+    }
+
+    setErrors(newErrors);
+    console.log("Validation errors:", newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validate()) return;
+
+    setLoading(true);
+    try {
+      console.log("Attempting login with:", formData.email);
+      const result = await login(formData);
+      console.log("Login result:", result);
+
+      success("Login successful!");
+
+      // Navigate based on user role
+      if (result.user?.role === "admin") {
+        navigate("/admin/dashboard");
+      } else if (result.user?.role === "designer") {
+        navigate("/designer/dashboard");
+      } else if (result.user?.role === "manager") {
+        navigate("/manager/dashboard");
+      } else {
+        navigate("/customer/dashboard");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        "Login failed. Please try again.";
+      error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="row justify-content-center">
+      <div className="col-md-6">
+        <div className="card shadow-sm">
+          <div className="card-body p-4">
+            <h2 className="text-center mb-4">Login to Your Account</h2>
+
+            {/* Debug info */}
+            {Object.keys(errors).length > 0 && (
+              <div className="alert alert-danger" role="alert">
+                <strong>Validation Errors:</strong>
+                <ul className="mb-0 mt-2">
+                  {Object.entries(errors).map(([field, message]) => (
+                    <li key={field}>{message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} noValidate>
+              <div className="mb-3">
+                <label htmlFor="email" className="form-label">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter your email"
+                />
+                {errors.email && (
+                  <div className="invalid-feedback">{errors.email}</div>
+                )}
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="password" className="form-label">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  className={`form-control ${
+                    errors.password ? "is-invalid" : ""
+                  }`}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter your password"
+                />
+                {errors.password && (
+                  <div className="invalid-feedback">{errors.password}</div>
+                )}
+              </div>
+
+              <div className="d-grid">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={loading}
+                >
+                  {loading ? "Logging in..." : "Login"}
+                </button>
+              </div>
+            </form>
+
+            <div className="text-center mt-3">
+              <p>
+                Don&apos;t have an account? <Link to="/signup">Sign Up</Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
