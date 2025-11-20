@@ -1,0 +1,1446 @@
+/* Modern Light Theme Tokens */
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --muted: #f1f3f9;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --primary-color: #2563eb;
+  --primary-dark: #1d4ed8;
+  --secondary-color: #f9fafb;
+  --accent-color: #10b981;
+  --light-gray: #e5e7eb;
+  --border-color: #e5e7eb;
+  --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --radius: 12px;
+}
+
+/* Dark theme variables (applied when .dark-theme is on body) */
+body.dark-theme {
+  --bg: #0b1220;
+  --card: #0f1724;
+  --muted: #071022;
+  --text: #e6eef8;
+  --text-muted: #9aa9bb;
+  --primary-color: #2563eb;
+  --primary-dark: #1d4ed8;
+  --secondary-color: #0b1220;
+  --accent-color: #10b981;
+  --light-gray: #0f1724;
+  --border-color: #172033;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+/* Dark theme visual polish */
+body.dark-theme {
+  background: linear-gradient(180deg, #071022 0%, #071826 100%);
+}
+
+.dark-theme .navbar-dark.bg-primary {
+  background: linear-gradient(90deg, #071026 0%, #0c1727 100%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dark-theme footer {
+  background: #071026 !important;
+  color: var(--text) !important;
+}
+
+/* Theme toggle button */
+#themeToggleBtn {
+  width: 44px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+#themeToggleBtn .fa-sun {
+  color: #f5c542;
+}
+#themeToggleBtn .fa-moon {
+  color: #b6c3d9;
+}
+
+#themeToggleBtn:focus {
+  box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
+}
+
+/* Dark theme content adjustments */
+.dark-theme body,
+.dark-theme .card,
+.dark-theme .alert,
+.dark-theme .table {
+  background: transparent;
+}
+.dark-theme .card {
+  background: #0b1220;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.dark-theme .card-header {
+  background: rgba(255, 255, 255, 0.02);
+}
+.dark-theme .nav-link {
+  color: var(--text-muted) !important;
+}
+
+/* Ensure nav links and dropdowns remain readable on dark navbar */
+.dark-theme .navbar,
+.dark-theme .navbar *:not(.btn) {
+  color: var(--text) !important;
+}
+.dark-theme .navbar .nav-link {
+  color: rgba(230, 238, 248, 0.92) !important;
+}
+.dark-theme .navbar .nav-link.active,
+.dark-theme .navbar .nav-link:hover {
+  color: #ffffff !important;
+}
+
+/* Improve form readability in dark mode */
+.dark-theme .form-control,
+.dark-theme .form-select,
+.dark-theme textarea.form-control {
+  background: #0f1724;
+  color: var(--text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.dark-theme .form-control::placeholder {
+  color: rgba(230, 238, 248, 0.5);
+}
+.dark-theme input[type="checkbox"],
+.dark-theme input[type="radio"] {
+  filter: brightness(1.2);
+}
+
+/* Links and important text */
+.dark-theme a {
+  color: var(--primary-color);
+}
+.dark-theme a:hover {
+  color: var(--primary-dark);
+}
+
+/* Slightly lift cards and increase contrast for readability */
+.dark-theme .card {
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+}
+
+/* Smooth transition when toggling theme */
+body,
+.card,
+.navbar,
+.alert,
+.btn,
+.form-control {
+  transition: background-color 220ms ease, color 220ms ease,
+    border-color 220ms ease;
+}
+
+/* Make hero and light sections adapt better in dark */
+.dark-theme .hero-section,
+.dark-theme .features-section .card {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.01)
+  );
+}
+
+/* Ensure footer links are readable */
+.dark-theme footer a {
+  color: var(--text);
+}
+.dark-theme .nav-link:hover {
+  color: var(--text) !important;
+}
+.dark-theme .alert {
+  background: #0e1724;
+  border-color: rgba(255, 255, 255, 0.04);
+}
+.dark-theme .table thead th {
+  color: var(--text-muted);
+}
+.dark-theme .table tbody td {
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.03);
+}
+.dark-theme .btn-primary {
+  box-shadow: none;
+  background: #1f56d6 !important; /* slightly darker blue for contrast */
+  border-color: #153e9b !important;
+  color: #fff !important;
+}
+.dark-theme .btn-outline-secondary {
+  border-color: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.02);
+}
+.dark-theme .btn-outline-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* removed stray fragment */
+
+/* Ensure btn-light remains readable in dark theme (light background -> dark text) */
+.dark-theme .btn-light {
+  background: #ffffff !important;
+  color: #000 !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Danger / success variants for contrast */
+.dark-theme .btn-danger {
+  background: #e04b4b !important;
+  border-color: #b43636 !important;
+  color: #fff !important;
+}
+.dark-theme .btn-success {
+  background: #16a34a !important;
+  border-color: #0e7a34 !important;
+  color: #fff !important;
+}
+
+/* Warning variant for badges/buttons */
+.dark-theme .btn-warning,
+.dark-theme .badge.bg-warning {
+  background: #f59e0b !important;
+  color: #111827 !important; /* dark text on yellow */
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.dark-theme .badge {
+  box-shadow: none;
+}
+
+/* Outline primary for CTA on dark backgrounds */
+.dark-theme .btn-outline-primary {
+  color: #bfe0ff !important;
+  border-color: rgba(191, 224, 255, 0.12) !important;
+}
+
+/* Ensure small/ghost buttons remain visible */
+.dark-theme .btn-sm,
+.dark-theme .btn-link {
+  color: #e6eef8 !important;
+}
+body.dark-theme p,
+body.dark-theme span,
+body.dark-theme li,
+body.dark-theme input,
+body.dark-theme textarea,
+body.dark-theme select {
+  color: var(--text) !important;
+}
+
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme h4,
+body.dark-theme h5,
+body.dark-theme h6 {
+  color: #ffffff !important;
+}
+
+/* Fix text-muted visibility in dark mode */
+.dark-theme .text-muted,
+.dark-theme small.text-muted {
+  color: var(--text-muted) !important;
+}
+
+.dark-theme .nav-link {
+  color: rgba(230, 238, 248, 0.9) !important;
+}
+.dark-theme .navbar-brand {
+  color: #ffffff !important;
+}
+.dark-theme .card,
+.dark-theme .card-body,
+.dark-theme .card-title,
+.dark-theme .card-text {
+  color: var(--text) !important;
+}
+.dark-theme .alert {
+  color: var(--text) !important;
+}
+.dark-theme .table thead th,
+.dark-theme .table tbody td {
+  color: var(--text) !important;
+}
+.dark-theme .btn,
+.dark-theme .btn-outline-secondary {
+  color: var(--text) !important;
+}
+
+/* Ensure list-group items have dark backgrounds and readable text */
+.dark-theme .list-group-item {
+  background-color: #0b1220 !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Improve badge contrast on dark */
+.dark-theme .badge.bg-secondary {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #e6eef8 !important;
+}
+
+/* Ensure icons in toggle are visible and sized well */
+#themeToggleBtn .fa-sun,
+#themeToggleBtn .fa-moon {
+  font-size: 16px;
+  color: inherit;
+}
+
+/* If a component intentionally keeps a light background in dark mode (e.g. some
+   padded sections), ensure text there is dark for legibility */
+/* Shop section and other bg-light sections should be dark in dark mode */
+body.dark-theme .shop-section.bg-light,
+body.dark-theme .bg-light {
+  background: rgba(11, 18, 32, 0.5) !important;
+  color: var(--text) !important;
+}
+
+body.dark-theme .shop-section h2,
+body.dark-theme .shop-section p,
+body.dark-theme .shop-section .lead {
+  color: #ffffff !important;
+}
+
+/* Keep specific elements light when needed */
+body.dark-theme .btn-light {
+  background: #ffffff !important;
+  color: #000 !important;
+}
+
+/* Hero section should be DARK in dark mode */
+body.dark-theme .hero-section {
+  background: linear-gradient(180deg, #0b1220 0%, #071022 100%) !important;
+  color: var(--text) !important;
+}
+body.dark-theme .hero-section h1,
+body.dark-theme .hero-section .display-4,
+body.dark-theme .hero-section p,
+body.dark-theme .hero-section .lead {
+  color: #ffffff !important;
+}
+body.dark-theme .hero-section .btn-outline-secondary {
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+body.dark-theme .hero-section .btn-outline-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+/* Features, Trending, and Testimonials sections - dark backgrounds */
+body.dark-theme .features-section,
+body.dark-theme .trending-section,
+body.dark-theme .testimonials-section {
+  background: transparent !important;
+}
+
+body.dark-theme .features-section .card,
+body.dark-theme .trending-section .card,
+body.dark-theme .testimonials-section .card {
+  background: rgba(15, 23, 36, 0.8) !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .features-section h2,
+body.dark-theme .trending-section h2,
+body.dark-theme .testimonials-section h2 {
+  color: #ffffff !important;
+}
+
+body.dark-theme .features-section .card-title,
+body.dark-theme .trending-section .card-title,
+body.dark-theme .testimonials-section .card-title {
+  color: #ffffff !important;
+}
+
+body.dark-theme .features-section .card-text,
+body.dark-theme .trending-section .card-text,
+body.dark-theme .testimonials-section .card-text {
+  color: var(--text-muted) !important;
+}
+
+/* Specific: design preview and preview details use light backgrounds; ensure text remains black */
+body.dark-theme #modelContainer,
+body.dark-theme #previewDetails,
+body.dark-theme .graphic-preview,
+body.dark-theme .graphic-option {
+  color: #000 !important;
+}
+
+/* Dashboard / manager pages: for panels that use white backgrounds, use black text */
+body.dark-theme .manager-dashboard .card,
+body.dark-theme .admin-dashboard .card,
+body.dark-theme .dashboard .card,
+body.dark-theme .card.bg-white {
+  color: #000 !important;
+}
+
+/* Footer polishing for dark mode */
+.dark-theme footer {
+  /* Use variables where possible so the footer inherits theme tokens */
+  background: linear-gradient(180deg, #040913 0%, #071026 100%) !important;
+  color: var(--text) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+.dark-theme footer a {
+  color: #9ec7ff !important;
+  text-decoration: none;
+}
+.dark-theme footer a:hover {
+  color: #dbeeff !important;
+  text-decoration: underline;
+}
+.dark-theme footer .small,
+.dark-theme footer address {
+  color: var(--text-muted) !important;
+}
+
+/* Social links inside footer should be subtle but readable in dark mode */
+.dark-theme .social-links .social-link {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text) !important;
+}
+.dark-theme .social-links .social-link:hover {
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-2px);
+}
+
+/* Make sure all standard button variants are covered in dark mode for consistency */
+.dark-theme .btn-primary {
+  background: #1f56d6 !important;
+  border-color: #153e9b !important;
+  color: #ffffff !important;
+}
+.dark-theme .btn-secondary {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  color: var(--text) !important;
+}
+.dark-theme .btn-outline-primary {
+  color: #bfe0ff !important;
+  border-color: rgba(191, 224, 255, 0.12) !important;
+  background: transparent !important;
+}
+.dark-theme .btn-outline-secondary {
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  background: transparent !important;
+}
+.dark-theme .btn-light {
+  /* Keep light buttons readable by forcing dark text on white backgrounds */
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+.dark-theme .btn-link {
+  color: var(--primary-color) !important;
+}
+
+/* Ensure small/ghost buttons remain visible */
+.dark-theme .btn-sm,
+.dark-theme .btn-link {
+  color: #e6eef8 !important;
+}
+.dark-theme .btn-outline-danger {
+  color: #ffb3b3 !important;
+  border-color: rgba(255, 75, 75, 0.14) !important;
+}
+.dark-theme .btn-outline-success {
+  color: #b3f0c8 !important;
+  border-color: rgba(22, 163, 74, 0.12) !important;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+    Cantarell, Noto Sans, sans-serif;
+  color: var(--text);
+  line-height: 1.6;
+  background: radial-gradient(900px 500px at 15% 10%, #ffffff 0%, #f5f7fb 60%),
+    radial-gradient(800px 500px at 85% 0%, #ffffff 0%, #f6f7fb 70%), var(--bg);
+}
+
+/* Navbar */
+.navbar-dark.bg-primary {
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--border-color);
+}
+.navbar .navbar-brand {
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--text) !important;
+}
+.navbar .nav-link {
+  color: var(--text-muted) !important;
+}
+.navbar .nav-link:hover {
+  color: var(--text) !important;
+}
+
+/* Hero Section */
+.hero-section {
+  background-color: var(--secondary-color);
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Features Section */
+.features-section .card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.features-section .card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+/* Color Swatches */
+.color-swatch {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+/* Design Studio */
+.design-preview {
+  min-height: 300px;
+}
+
+/* Timeline */
+.timeline {
+  position: relative;
+  padding: 20px 0;
+}
+
+.timeline:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 15px;
+  width: 2px;
+  background-color: var(--light-gray);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 30px;
+  padding-left: 40px;
+  opacity: 0.5;
+}
+
+.timeline-item.active {
+  opacity: 1;
+}
+
+.timeline-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 30px;
+  background-color: var(--light-gray);
+  border: 2px solid white;
+}
+
+.timeline-item.active .timeline-badge {
+  background-color: var(--primary-color);
+}
+
+.timeline-content {
+  padding: 10px 15px;
+  background-color: white;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+}
+
+/* Forms */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+/* Alerts */
+.alert {
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text);
+}
+.alert-info {
+  border-color: #38bdf8;
+}
+.alert-danger {
+  border-color: #ef4444;
+}
+.alert-success {
+  border-color: #22c55e;
+}
+
+/* Buttons */
+.btn-primary {
+  background: var(--primary-color);
+  border: 1px solid var(--primary-dark);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+}
+.btn-primary:hover,
+.btn-primary:focus {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Cards */
+.card {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.card-header {
+  background: var(--secondary-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Footer */
+footer {
+  margin-top: 3rem;
+}
+body:not(.dark-theme) footer.bg-dark {
+  /* Only force a white footer when the site is NOT in dark theme */
+  background: #ffffff !important;
+  border-top: 1px solid var(--border-color);
+  color: var(--text) !important;
+}
+
+/* Social Media Links */
+.social-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.social-link:hover {
+  color: #ffffff;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.social-link.instagram:hover {
+  background: linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7);
+}
+
+.social-link.twitter:hover {
+  background: #1da1f2;
+}
+
+.social-link.youtube:hover {
+  background: #ff0000;
+}
+
+.social-link svg {
+  flex-shrink: 0;
+}
+
+.social-link span {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Shop Styles */
+.product-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow);
+}
+
+.product-card img {
+  height: 200px;
+  object-fit: cover;
+}
+
+/* Tables, badges */
+.table {
+  color: var(--text);
+  background: var(--card);
+}
+.table thead th {
+  color: var(--text-muted);
+  border-color: var(--border-color);
+}
+.table tbody td {
+  border-color: var(--border-color);
+}
+.badge.bg-warning {
+  background-color: #f59e0b !important;
+}
+.badge.bg-info {
+  background-color: #38bdf8 !important;
+}
+.badge.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+.badge.bg-success {
+  background-color: #22c55e !important;
+}
+.badge.bg-danger {
+  background-color: #ef4444 !important;
+}
+
+/* 3D viewer */
+#modelContainer {
+  border: 1px solid var(--border-color);
+  background: linear-gradient(135deg, #f8fafc, #f3f4f6);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 2rem 0;
+  }
+
+  .timeline:before {
+    left: 10px;
+  }
+
+  .timeline-item {
+    padding-left: 30px;
+  }
+
+  .timeline-badge {
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+  }
+
+  .product-card img {
+    height: 150px;
+  }
+}
+
+/* Dark mode cart page specific fixes */
+.dark-theme .d-flex span,
+.dark-theme .d-flex .fw-bold span {
+  color: var(--text) !important;
+}
+
+/* Ensure all cart summary text is visible */
+.dark-theme .card-body span,
+.dark-theme .card-body .fw-bold {
+  color: var(--text) !important;
+}
+
+/* Fix icons visibility in dark mode */
+.dark-theme .text-primary {
+  color: #60a5fa !important;
+}
+
+.dark-theme i.text-primary {
+  color: #60a5fa !important;
+}
+
+/* Ensure all card titles and text are visible */
+.dark-theme .card h3,
+.dark-theme .card h5,
+.dark-theme .card-title {
+  color: #ffffff !important;
+}
+
+.dark-theme .card p,
+.dark-theme .card-text {
+  color: var(--text-muted) !important;
+}
+
+/* Fix table heading and cell text visibility */
+.dark-theme .table thead th {
+  color: var(--text-muted) !important;
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.dark-theme .table tbody td,
+.dark-theme .table tbody td h6,
+.dark-theme .table tbody td small {
+  color: var(--text) !important;
+}
+
+/* Ensure hr separator is visible in dark mode */
+.dark-theme hr {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  opacity: 1;
+}
+
+/* Make sure all button outline variants are visible */
+.dark-theme .btn-outline-danger {
+  color: #ff6b6b !important;
+  border-color: #ff6b6b !important;
+}
+
+.dark-theme .btn-outline-danger:hover {
+  background-color: #ff6b6b !important;
+  color: #ffffff !important;
+}
+
+/* Fix alert links visibility in dark mode */
+.dark-theme .alert a {
+  color: #60a5fa !important;
+  text-decoration: underline;
+}
+
+.dark-theme .alert a:hover {
+  color: #93c5fd !important;
+}
+
+.dark-theme .alert-info {
+  background-color: rgba(37, 99, 235, 0.1) !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+  color: var(--text) !important;
+}
+
+/* Form Validation Styles */
+.form-control.is-valid,
+.form-select.is-valid {
+  border-color: #22c55e;
+  padding-right: calc(1.5em + 0.75rem);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2322c55e' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: #ef4444;
+  padding-right: calc(1.5em + 0.75rem);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23ef4444'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23ef4444' stroke='none'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.invalid-feedback {
+  display: none;
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.form-control.is-invalid ~ .invalid-feedback {
+  display: block;
+}
+
+.valid-feedback {
+  display: none;
+  color: #22c55e;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.form-control.is-valid ~ .valid-feedback {
+  display: block;
+}
+
+/* Dark mode form validation styles */
+.dark-theme .form-control.is-valid {
+  border-color: #16a34a;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2316a34a' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+}
+
+.dark-theme .form-control.is-invalid {
+  border-color: #e04b4b;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23e04b4b'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23e04b4b' stroke='none'/%3e%3c/svg%3e");
+}
+
+.dark-theme .invalid-feedback {
+  color: #ff6b6b;
+}
+
+.dark-theme .valid-feedback {
+  color: #16a34a;
+}
+
+/* Form text / helper text */
+.form-text {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.dark-theme .form-text {
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   MANAGER & DESIGNER DASHBOARD DARK THEME FIXES
+   ============================================================ */
+
+/* Fix card backgrounds in dark theme */
+.dark-theme .card {
+  background: #0f1724 !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Ensure card headers are visible */
+.dark-theme .card-header {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Fix white background cards to have proper dark theme */
+.dark-theme .card-header.bg-white,
+.dark-theme .bg-white.card-header {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--text) !important;
+}
+
+/* Ensure all card text is readable */
+.dark-theme .card-body,
+.dark-theme .card-body h1,
+.dark-theme .card-body h2,
+.dark-theme .card-body h3,
+.dark-theme .card-body h4,
+.dark-theme .card-body h5,
+.dark-theme .card-body h6 {
+  color: var(--text) !important;
+}
+
+/* Fix colored header cards (success, primary, info, etc.) */
+.dark-theme .card.bg-success,
+.dark-theme .card.bg-primary,
+.dark-theme .card.bg-info,
+.dark-theme .card.bg-warning,
+.dark-theme .card.bg-danger {
+  color: #ffffff !important;
+}
+
+.dark-theme .card.bg-success .card-body,
+.dark-theme .card.bg-primary .card-body,
+.dark-theme .card.bg-info .card-body,
+.dark-theme .card.bg-warning .card-body,
+.dark-theme .card.bg-danger .card-body {
+  color: #ffffff !important;
+}
+
+/* Fix text-white to remain white */
+.dark-theme .text-white,
+.dark-theme .text-white * {
+  color: #ffffff !important;
+}
+
+/* Fix text-muted in dark theme */
+.dark-theme .text-muted,
+.dark-theme small.text-muted {
+  color: #9aa9bb !important;
+}
+
+/* Fix tables in dark theme */
+.dark-theme .table {
+  color: var(--text) !important;
+  background: transparent !important;
+}
+
+.dark-theme .table thead th {
+  color: var(--text) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark-theme .table tbody td {
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.04) !important;
+  background: transparent !important;
+}
+
+.dark-theme .table tbody tr {
+  background: transparent !important;
+}
+
+.dark-theme .table tbody tr:nth-child(odd) {
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark-theme .table tbody tr:nth-child(even) {
+  background: transparent !important;
+}
+
+.dark-theme .table-hover tbody tr:hover,
+.dark-theme .table-hover tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text) !important;
+}
+
+/* Force all table content to be visible */
+.dark-theme .table tbody td *,
+.dark-theme .table tbody td strong,
+.dark-theme .table tbody td small,
+.dark-theme .table tbody td span {
+  color: inherit !important;
+}
+
+.dark-theme .table tbody td small.text-muted {
+  color: #9aa9bb !important;
+}
+
+/* Fix badges in dark theme */
+.dark-theme .badge {
+  color: #ffffff;
+}
+
+.dark-theme .badge.bg-warning {
+  background: #f59e0b !important;
+  color: #111827 !important;
+}
+
+.dark-theme .badge.bg-info {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .badge.bg-success {
+  background: #16a34a !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .badge.bg-danger {
+  background: #e04b4b !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .badge.bg-secondary {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #e6eef8 !important;
+}
+
+/* Fix buttons in dark theme */
+.dark-theme .btn-primary {
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .btn-success {
+  background: #16a34a !important;
+  border-color: #0e7a34 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .btn-danger {
+  background: #e04b4b !important;
+  border-color: #b43636 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .btn-warning {
+  background: #f59e0b !important;
+  border-color: #d97706 !important;
+  color: #111827 !important;
+}
+
+.dark-theme .btn-info {
+  background: #3b82f6 !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .btn-outline-primary {
+  color: #60a5fa !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+  background: transparent;
+}
+
+.dark-theme .btn-outline-primary:hover {
+  background: rgba(37, 99, 235, 0.1) !important;
+  color: #93c5fd !important;
+}
+
+.dark-theme .btn-outline-secondary {
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  background: transparent;
+}
+
+.dark-theme .btn-outline-secondary:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+/* Fix modal backgrounds */
+.dark-theme .modal-content {
+  background: #0f1724 !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .modal-header {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .modal-header.bg-success,
+.dark-theme .modal-header.bg-primary,
+.dark-theme .modal-header.bg-info {
+  color: #ffffff !important;
+}
+
+.dark-theme .modal-body {
+  color: var(--text) !important;
+}
+
+.dark-theme .modal-footer {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Fix form elements in dark theme */
+.dark-theme .form-control,
+.dark-theme .form-select {
+  background: #0b1220 !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dark-theme .form-control:focus,
+.dark-theme .form-select:focus {
+  background: #0f1724 !important;
+  color: var(--text) !important;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+}
+
+.dark-theme .form-control::placeholder {
+  color: rgba(230, 238, 248, 0.4) !important;
+}
+
+.dark-theme .form-label {
+  color: var(--text) !important;
+}
+
+/* Fix bg-light sections in dark theme */
+.dark-theme .bg-light,
+.dark-theme .card.bg-light {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--text) !important;
+}
+
+/* Fix small text and icons */
+.dark-theme small {
+  color: var(--text-muted) !important;
+}
+
+.dark-theme i,
+.dark-theme .fas,
+.dark-theme .far {
+  color: inherit;
+}
+
+/* Fix border colors */
+.dark-theme .border,
+.dark-theme .border-start,
+.dark-theme .border-end,
+.dark-theme .border-top,
+.dark-theme .border-bottom {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure gradient backgrounds work correctly */
+.dark-theme .bg-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+}
+
+/* Fix alert messages */
+.dark-theme .alert {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .alert-success {
+  background: rgba(22, 163, 74, 0.15) !important;
+  color: #4ade80 !important;
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+.dark-theme .alert-danger {
+  background: rgba(224, 75, 75, 0.15) !important;
+  color: #f87171 !important;
+  border-color: rgba(224, 75, 75, 0.3);
+}
+
+.dark-theme .alert-warning {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.dark-theme .alert-info {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Fix progress bars */
+.dark-theme .progress {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Fix dropdown menus */
+.dark-theme .dropdown-menu {
+  background: #0f1724 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .dropdown-item {
+  color: var(--text) !important;
+}
+
+.dark-theme .dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+/* Fix list groups */
+.dark-theme .list-group-item {
+  background: #0f1724 !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark-theme .list-group-item:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Fix pagination */
+.dark-theme .pagination .page-link {
+  background: #0f1724 !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .pagination .page-link:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .pagination .page-item.active .page-link {
+  background: #2563eb !important;
+  border-color: #2563eb;
+  color: #ffffff !important;
+}
+
+/* Ensure hr elements are visible */
+.dark-theme hr {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  opacity: 1;
+}
+
+/* Fix any remaining white text on white backgrounds */
+.dark-theme .card.bg-white .card-body {
+  background: #0f1724 !important;
+  color: var(--text) !important;
+}
+
+/* Fix table-responsive container */
+.dark-theme .table-responsive {
+  background: transparent !important;
+}
+
+/* Ensure table doesn't inherit white backgrounds */
+.dark-theme .card .table-responsive,
+.dark-theme .card-body .table-responsive {
+  background: transparent !important;
+}
+
+.dark-theme .card .table,
+.dark-theme .card-body .table {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+/* Gradient header cards for dashboards */
+.bg-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+}
+
+.bg-gradient .card-body {
+  color: #ffffff !important;
+}
+
+.bg-gradient h1,
+.bg-gradient h2,
+.bg-gradient h3,
+.bg-gradient h4,
+.bg-gradient h5,
+.bg-gradient h6,
+.bg-gradient p,
+.bg-gradient small,
+.bg-gradient .card-text,
+.bg-gradient .card-title {
+  color: #ffffff !important;
+}
+
+.bg-gradient .text-white {
+  color: #ffffff !important;
+}
+
+/* Ensure dark theme keeps the gradient visible */
+.dark-theme .bg-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+}
+
+/* Ensure text-muted is visible in light mode on white cards */
+.text-muted {
+  color: #6b7280 !important;
+}
+
+/* Light mode card backgrounds should be white with good contrast */
+.card {
+  background-color: #ffffff;
+  color: #1f2937;
+}
+
+.card h1,
+.card h2,
+.card h3,
+.card h4,
+.card h5,
+.card h6 {
+  color: #1f2937;
+}
+
+.card .text-muted {
+  color: #6b7280 !important;
+}
+
+/* Ensure card headers are visible in light mode */
+.card-header {
+  background-color: #f9fafb;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.card-header.bg-white {
+  background-color: #ffffff !important;
+  color: #1f2937;
+}
+
+/* Table styling for light mode */
+.table {
+  color: #1f2937;
+}
+
+.table thead th {
+  color: #374151;
+  font-weight: 600;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.table tbody td {
+  color: #1f2937;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Ensure alerts are visible in light mode */
+.alert {
+  color: #1f2937;
+}
+
+.alert-info {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.alert-success {
+  background-color: #d1fae5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
+.alert-warning {
+  background-color: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.alert-danger {
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+/* Shake Animation for Form Validation Errors */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-10px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(10px);
+  }
+}
+
+.shake-animation {
+  animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  border: 3px solid #ef4444 !important;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.5) !important;
+}
+
+.dark-theme .shake-animation {
+  border: 3px solid #f87171 !important;
+  box-shadow: 0 0 30px rgba(248, 113, 113, 0.6) !important;
+}
