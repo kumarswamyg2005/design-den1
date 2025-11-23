@@ -1,0 +1,638 @@
+/* Designer Dashboard Styles */
+
+.designer-dashboard {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-attachment: fixed;
+  padding-bottom: 2rem;
+}
+
+.designer-dashboard .container-fluid {
+  max-width: 1400px;
+}
+
+.dashboard-header {
+  border: none;
+  background: white !important;
+  border-radius: 15px;
+}
+
+.designer-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.designer-badge i {
+  font-size: 1.25rem;
+}
+
+/* Stat Cards */
+.stat-card {
+  transition: all 0.3s ease;
+  border: none;
+  border-radius: 15px;
+  background: white;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+.border-left-warning {
+  border-left: 5px solid #ffc107 !important;
+}
+
+.border-left-info {
+  border-left: 5px solid #17a2b8 !important;
+}
+
+.border-left-primary {
+  border-left: 5px solid #007bff !important;
+}
+
+.border-left-success {
+  border-left: 5px solid #28a745 !important;
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.75rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #2c3e50;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+/* Order Cards */
+.order-card {
+  transition: all 0.3s ease;
+  border: none;
+  border-radius: 15px;
+  background: white;
+  overflow: hidden;
+}
+
+.order-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.order-card .card-header {
+  border-bottom: 2px solid #f0f0f0;
+  padding: 1rem 1.25rem;
+}
+
+.order-card .card-header h5 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.order-card .card-body {
+  padding: 1.25rem;
+}
+
+.order-card .card-footer {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.25rem;
+}
+
+/* Item Row */
+.item-row {
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+/* Order Total */
+.order-total {
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* Progress Bar */
+.progress {
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e9ecef;
+}
+
+.progress-bar {
+  transition: width 0.6s ease;
+}
+
+/* Buttons */
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border: none;
+}
+
+.btn-info {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  border: none;
+}
+
+/* Modal Animations */
+.modal.show {
+  animation: modalFadeIn 0.3s;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  animation: modalSlideUp 0.3s;
+  border-radius: 15px;
+  border: none;
+  overflow: hidden;
+}
+
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  border-bottom: 2px solid #f0f0f0;
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+}
+
+/* Range Input */
+.form-range {
+  height: 10px;
+  border-radius: 5px;
+}
+
+.form-range::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Empty State */
+.designer-dashboard .card-body.text-center.py-5 i {
+  opacity: 0.3;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .designer-dashboard {
+    padding-bottom: 1rem;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+  }
+
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+
+  .designer-badge {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .order-card .card-footer .d-flex {
+    flex-direction: column;
+  }
+
+  .order-card .card-footer .btn {
+    width: 100%;
+  }
+}
+
+/* Badge Styles */
+.badge {
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  border-radius: 50px;
+  font-size: 0.875rem;
+}
+
+/* Chat Panel Styles */
+.chat-panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.chat-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  max-width: 100%;
+  height: 100vh;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.chat-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-avatar {
+  width: 45px;
+  height: 45px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.text-muted-light {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #f8f9fa;
+}
+
+.message {
+  max-width: 80%;
+  margin-bottom: 15px;
+}
+
+.message.sent {
+  margin-left: auto;
+}
+
+.message.received {
+  margin-right: auto;
+}
+
+.message-content {
+  padding: 12px 16px;
+  border-radius: 18px;
+  position: relative;
+}
+
+.message.sent .message-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message.received .message-content {
+  background: white;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  border-bottom-left-radius: 4px;
+}
+
+.message-content p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.message-time {
+  font-size: 10px;
+  opacity: 0.7;
+  display: block;
+  margin-top: 4px;
+}
+
+.progress-badge {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.chat-quick-actions {
+  padding: 10px 15px;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quick-action-btn {
+  padding: 6px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  background: white;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-action-btn:hover {
+  background: #f0f0f0;
+  border-color: #667eea;
+}
+
+.chat-input-area {
+  padding: 15px 20px;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+}
+
+.chat-input-area input {
+  border-radius: 25px;
+  padding: 10px 20px;
+}
+
+.chat-input-area .btn-purple {
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Milestone Grid */
+.milestone-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.milestone-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.milestone-item:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.milestone-item.selected {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.milestone-item.completed {
+  border-color: #28a745;
+  background: rgba(40, 167, 69, 0.05);
+}
+
+.milestone-icon {
+  width: 40px;
+  height: 40px;
+  background: #f0f0f0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  color: #666;
+}
+
+.milestone-item.selected .milestone-icon {
+  background: #667eea;
+  color: white;
+}
+
+.milestone-item.completed .milestone-icon {
+  background: #28a745;
+  color: white;
+}
+
+.milestone-info {
+  flex: 1;
+}
+
+.milestone-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+}
+
+.milestone-percentage {
+  font-size: 11px;
+  color: #666;
+}
+
+.milestone-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+/* Purple Theme Additions */
+.bg-purple {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.text-purple {
+  color: #667eea !important;
+}
+
+.btn-purple {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+}
+
+.btn-purple:hover {
+  background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+  color: white;
+}
+
+.btn-outline-purple {
+  border: 2px solid #667eea;
+  color: #667eea;
+  background: transparent;
+}
+
+.btn-outline-purple:hover {
+  background: #667eea;
+  color: white;
+}
+
+.bg-purple-light {
+  background: rgba(102, 126, 234, 0.1) !important;
+}
+
+.border-left-purple {
+  border-left: 5px solid #667eea !important;
+}
+
+/* Customer Info in Card */
+.customer-avatar {
+  width: 40px;
+  height: 40px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #667eea;
+}
+
+/* Design Item */
+.design-icon {
+  width: 35px;
+  height: 35px;
+  background: rgba(102, 126, 234, 0.15);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Cursor */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Rotating Animation */
+.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Active Stat Card */
+.stat-card.active {
+  box-shadow: 0 0 0 3px #667eea !important;
+}
+
+/* Responsive Chat Panel */
+@media (max-width: 576px) {
+  .chat-panel {
+    width: 100%;
+  }
+
+  .milestone-grid {
+    grid-template-columns: 1fr;
+  }
+}
