@@ -10,6 +10,7 @@ import {
 } from "../../utils/validation";
 import { useFlash } from "../../context/FlashContext";
 import PaymentModal from "../../components/PaymentModal";
+import DesignerSelection from "../../components/DesignerSelection";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -40,12 +41,26 @@ const Checkout = () => {
   const [lookingUpPincode, setLookingUpPincode] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
+  // Designer selection for custom orders
+  const [selectedDesigner, setSelectedDesigner] = useState(null);
+  const [showDesignerSelection, setShowDesignerSelection] = useState(false);
+
+  // Check if cart has custom designs (orders that need a designer)
+  const hasCustomDesigns = cart?.items?.some(
+    (item) => item.designId && !item.productId
+  );
+
   useEffect(() => {
     if (!cart?.items || cart.items.length === 0) {
       showFlash("Your cart is empty", "error");
       navigate("/customer/cart");
     }
     fetchSavedAddresses();
+
+    // Show designer selection if cart has custom designs
+    if (hasCustomDesigns) {
+      setShowDesignerSelection(true);
+    }
 
     // Auto-enable phone editing if user doesn't have a contact number
     if (!user?.contactNumber) {
@@ -92,6 +107,12 @@ const Checkout = () => {
     } catch (error) {
       console.error("Error fetching addresses:", error);
     }
+  };
+
+  // Handle designer selection for custom orders
+  const handleDesignerSelect = (designer) => {
+    setSelectedDesigner(designer);
+    showFlash(`Designer ${designer.name} selected!`, "success");
   };
 
   const handleSelectAddress = (addressId) => {
@@ -373,6 +394,12 @@ const Checkout = () => {
       return;
     }
 
+    // Validate designer selection for custom orders
+    if (hasCustomDesigns && !selectedDesigner) {
+      showFlash("Please select a designer for your custom order", "error");
+      return;
+    }
+
     // Show payment modal instead of directly processing
     setShowPaymentModal(true);
   };
@@ -412,11 +439,114 @@ const Checkout = () => {
         </div>
       </div>
 
+      {/* Designer Selection for Custom Orders */}
+      {hasCustomDesigns && showDesignerSelection && (
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card shadow-sm">
+              <div
+                className="card-header bg-gradient"
+                style={{
+                  background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                  color: "white",
+                }}
+              >
+                <div className="d-flex justify-content-between align-items-center">
+                  <h3 className="mb-0">
+                    <i className="fas fa-palette me-2"></i>
+                    Step 1: Choose Your Designer
+                  </h3>
+                  {selectedDesigner && (
+                    <span className="badge bg-success">
+                      <i className="fas fa-check me-1"></i>
+                      {selectedDesigner.name} Selected
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="card-body p-0">
+                <DesignerSelection
+                  onSelectDesigner={handleDesignerSelect}
+                  selectedDesignerId={selectedDesigner?._id}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Designer Summary */}
+      {hasCustomDesigns && selectedDesigner && (
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="alert alert-success d-flex align-items-center">
+              <div className="me-3">
+                {selectedDesigner.profilePicture ? (
+                  <img
+                    src={selectedDesigner.profilePicture}
+                    alt={selectedDesigner.name}
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontSize: "1.25rem",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {selectedDesigner.name?.charAt(0)?.toUpperCase() || "D"}
+                  </div>
+                )}
+              </div>
+              <div className="flex-grow-1">
+                <h5 className="mb-1">
+                  <i className="fas fa-check-circle text-success me-2"></i>
+                  Designer Selected: {selectedDesigner.name}
+                </h5>
+                <small className="text-muted">
+                  ⭐ {(selectedDesigner.rating || 0).toFixed(1)} rating • 📦{" "}
+                  {selectedDesigner.completedOrders || 0} orders completed • ⏱️
+                  ~{selectedDesigner.turnaroundDays || 7} days turnaround
+                </small>
+              </div>
+              <button
+                className="btn btn-outline-primary btn-sm"
+                onClick={() => setSelectedDesigner(null)}
+              >
+                Change Designer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="row">
         <div className="col-md-8">
           <div className="card shadow-sm mb-4">
             <div className="card-header">
-              <h3>Shipping Information</h3>
+              <h3>
+                {hasCustomDesigns ? (
+                  <>
+                    <i className="fas fa-truck me-2"></i>
+                    Step 2: Shipping Information
+                  </>
+                ) : (
+                  "Shipping Information"
+                )}
+              </h3>
             </div>
             <div className="card-body">
               <form onSubmit={handleSubmit}>
@@ -990,7 +1120,11 @@ const Checkout = () => {
       <PaymentModal
         show={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        orderData={{ ...formData, saveAddress }}
+        orderData={{
+          ...formData,
+          saveAddress,
+          selectedDesignerId: selectedDesigner?._id,
+        }}
         totalAmount={total}
       />
     </div>

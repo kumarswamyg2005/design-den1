@@ -4,13 +4,97 @@ const session = require("express-session");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const path = require("path");
+const nodemailer = require("nodemailer");
 
 const app = express();
-const PORT = 5174;
+const PORT = process.env.PORT || 5174;
+
+// Email transporter setup using Gmail
+// Set environment variables: EMAIL_USER and EMAIL_PASS
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER || "kumaritsme1510@gmail.com",
+    pass: process.env.EMAIL_PASS || "pgyeutxrkqmbvybq",
+  },
+});
+
+// Verify email transporter on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.log("⚠️  Email service not configured:", error.message);
+    console.log(
+      "   To enable email 2FA, set up Gmail App Password in server.cjs",
+    );
+  } else {
+    console.log("✅ Email service ready to send messages");
+  }
+});
+
+// For storing verification codes in memory
+const verificationCodes = new Map();
+
+// Generate 6-digit code
+const generateVerificationCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Helper function to send email
+const sendVerificationEmail = async (to, code, purpose) => {
+  const subject =
+    purpose === "2fa_login"
+      ? "Login Verification Code - DesignDen"
+      : "Enable Two-Factor Authentication - DesignDen";
+
+  const title =
+    purpose === "2fa_login"
+      ? "Login Verification"
+      : "Enable Two-Factor Authentication";
+
+  const mailOptions = {
+    from: '"DesignDen Security" <kumaritsme1510@gmail.com>',
+    to: to,
+    subject: subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #4F46E5; margin: 0;">👕 DesignDen</h1>
+          <p style="color: #6b7280; margin-top: 5px;">Custom Clothing Platform</p>
+        </div>
+        
+        <div style="background: #f9fafb; border-radius: 12px; padding: 30px; text-align: center;">
+          <h2 style="color: #1f2937; margin-top: 0;">${title}</h2>
+          <p style="color: #4b5563;">Your verification code is:</p>
+          
+          <div style="background: #4F46E5; color: white; font-size: 32px; font-weight: bold; letter-spacing: 8px; padding: 20px 30px; border-radius: 8px; display: inline-block; margin: 20px 0;">
+            ${code}
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+            This code will expire in <strong>5 minutes</strong>.
+          </p>
+          <p style="color: #9ca3af; font-size: 12px;">
+            If you didn't request this code, please ignore this email.
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            © 2026 DesignDen. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+};
 
 // MongoDB Connection
+const MONGODB_URI =
+  process.env.MONGODB_URI || "mongodb://localhost:27017/designden";
 mongoose
-  .connect("mongodb://localhost:27017/designden")
+  .connect(MONGODB_URI)
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
@@ -23,6 +107,9 @@ const userSchema = new mongoose.Schema({
   contactNumber: String,
   role: String,
   approved: { type: Boolean, default: true },
+  // 2FA fields (email-based)
+  twoFactorEnabled: { type: Boolean, default: false },
+  twoFactorMethod: { type: String, default: "email" }, // email
   addresses: [
     {
       street: String,
@@ -33,6 +120,32 @@ const userSchema = new mongoose.Schema({
       createdAt: { type: Date, default: Date.now },
     },
   ],
+  // Designer Profile Fields
+  designerProfile: {
+    bio: { type: String, default: "" },
+    specializations: [{ type: String }], // e.g., ["T-Shirts", "Ethnic Wear", "Casual", "Formal"]
+    experience: { type: Number, default: 0 }, // Years of experience
+    portfolio: [
+      {
+        title: String,
+        description: String,
+        image: String, // URL to portfolio image
+        category: String,
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    rating: { type: Number, default: 0, min: 0, max: 5 },
+    totalRatings: { type: Number, default: 0 },
+    completedOrders: { type: Number, default: 0 },
+    isAvailable: { type: Boolean, default: true },
+    priceRange: {
+      min: { type: Number, default: 500 },
+      max: { type: Number, default: 5000 },
+    },
+    turnaroundDays: { type: Number, default: 7 }, // Average days to complete
+    featuredWork: String, // URL to featured design image
+    badges: [{ type: String }], // e.g., ["Top Rated", "Fast Delivery", "Premium Designer"]
+  },
 });
 
 const User = mongoose.model("User", userSchema);
@@ -108,7 +221,7 @@ const deliveryPartnerSchema = new mongoose.Schema({
 
 const DeliveryPartner = mongoose.model(
   "DeliveryPartner",
-  deliveryPartnerSchema
+  deliveryPartnerSchema,
 );
 
 // ============================================
@@ -199,7 +312,7 @@ const productionMilestoneSchema = new mongoose.Schema({
 
 const ProductionMilestone = mongoose.model(
   "ProductionMilestone",
-  productionMilestoneSchema
+  productionMilestoneSchema,
 );
 
 // ============================================
@@ -521,9 +634,17 @@ const Review = mongoose.model("Review", reviewSchema);
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      // Allow localhost on any port
+      if (origin.match(/^http:\/\/localhost:\d+$/)) {
+        return callback(null, true);
+      }
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -535,7 +656,7 @@ app.use("/models", express.static(path.join(__dirname, "public/models")));
 app.use(
   session({
     secret: "designden_secret_key_12345",
-    resave: false,
+    resave: true,
     saveUninitialized: false,
     cookie: {
       secure: false,
@@ -543,13 +664,13 @@ app.use(
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: "lax",
     },
-  })
+  }),
 );
 
 // Routes
 app.post("/api/auth/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, twoFactorCode } = req.body;
     console.log("Login attempt:", email);
 
     const user = await User.findOne({
@@ -572,6 +693,71 @@ app.post("/api/auth/login", async (req, res) => {
       });
     }
 
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // If no 2FA code provided, send one and request it
+      if (!twoFactorCode) {
+        // Generate and send code
+        const code = generateVerificationCode();
+        verificationCodes.set(user.email, {
+          code,
+          expiresAt: Date.now() + 5 * 60 * 1000,
+          purpose: "2fa_login",
+        });
+
+        console.log(`📧 Sending login verification code to ${user.email}`);
+
+        // Send email
+        try {
+          await sendVerificationEmail(user.email, code, "2fa_login");
+          console.log(`✅ Login code sent successfully to ${user.email}`);
+
+          return res.status(200).json({
+            success: false,
+            requires2FA: true,
+            message: "Verification code sent to your email",
+          });
+        } catch (emailError) {
+          console.error("❌ Failed to send login email:", emailError.message);
+          verificationCodes.delete(user.email);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to send verification email. Please try again.",
+          });
+        }
+      }
+
+      // Verify 2FA code from email
+      const storedData = verificationCodes.get(user.email);
+      if (!storedData || storedData.purpose !== "2fa_login") {
+        return res.status(401).json({
+          success: false,
+          requires2FA: true,
+          message: "Verification code expired. Please try again.",
+        });
+      }
+
+      if (Date.now() > storedData.expiresAt) {
+        verificationCodes.delete(user.email);
+        return res.status(401).json({
+          success: false,
+          requires2FA: true,
+          message: "Verification code expired. Please try again.",
+        });
+      }
+
+      if (storedData.code !== twoFactorCode) {
+        return res.status(401).json({
+          success: false,
+          requires2FA: true,
+          message: "Invalid verification code",
+        });
+      }
+
+      // Clear used code
+      verificationCodes.delete(user.email);
+    }
+
     req.session.user = {
       id: user._id,
       username: user.username,
@@ -579,6 +765,7 @@ app.post("/api/auth/login", async (req, res) => {
       email: user.email,
       role: user.role,
       contactNumber: user.contactNumber,
+      twoFactorEnabled: user.twoFactorEnabled,
     };
 
     req.session.save((err) => {
@@ -676,6 +863,331 @@ app.post("/api/auth/logout", (req, res) => {
   });
 });
 
+// ============================================
+// TWO-FACTOR AUTHENTICATION (2FA) ROUTES - EMAIL BASED
+// ============================================
+
+// Send verification code to email for 2FA setup
+app.post("/api/auth/2fa/setup", async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not authenticated" });
+    }
+
+    const user = await User.findById(req.session.user.id);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Generate 6-digit verification code
+    const code = generateVerificationCode();
+
+    // Store code with expiration (5 minutes)
+    verificationCodes.set(user.email, {
+      code,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      purpose: "2fa_setup",
+    });
+
+    console.log(`📧 Sending 2FA setup code to ${user.email}`);
+
+    // Send email
+    try {
+      await sendVerificationEmail(user.email, code, "2fa_setup");
+      console.log(`✅ 2FA code sent successfully to ${user.email}`);
+
+      res.json({
+        success: true,
+        message: "Verification code sent to your email",
+        email: user.email.replace(/(.{2})(.*)(@.*)/, "$1***$3"), // Mask email
+      });
+    } catch (emailError) {
+      console.error("❌ Failed to send email:", emailError.message);
+      // Delete the stored code since email failed
+      verificationCodes.delete(user.email);
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to send verification email. Please check email configuration.",
+      });
+    }
+  } catch (error) {
+    console.error("2FA setup error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Verify code and enable 2FA
+app.post("/api/auth/2fa/verify", async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not authenticated" });
+    }
+
+    const { token } = req.body;
+    if (!token) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Verification code required" });
+    }
+
+    const user = await User.findById(req.session.user.id);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Check stored code
+    const storedData = verificationCodes.get(user.email);
+    if (!storedData || storedData.purpose !== "2fa_setup") {
+      return res.status(400).json({
+        success: false,
+        message: "No verification code found. Please request a new one.",
+      });
+    }
+
+    // Check expiration
+    if (Date.now() > storedData.expiresAt) {
+      verificationCodes.delete(user.email);
+      return res.status(400).json({
+        success: false,
+        message: "Verification code expired. Please request a new one.",
+      });
+    }
+
+    // Verify code
+    if (storedData.code !== token) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid verification code",
+      });
+    }
+
+    // Enable 2FA
+    user.twoFactorEnabled = true;
+    user.twoFactorMethod = "email";
+    await user.save();
+
+    // Clear used code
+    verificationCodes.delete(user.email);
+
+    // Update session
+    req.session.user.twoFactorEnabled = true;
+
+    res.json({
+      success: true,
+      message: "Two-factor authentication enabled successfully",
+    });
+  } catch (error) {
+    console.error("2FA verify error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Send 2FA code for login
+app.post("/api/auth/2fa/send-login-code", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user || !user.twoFactorEnabled) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid request" });
+    }
+
+    // Generate code
+    const code = generateVerificationCode();
+
+    // Store code
+    verificationCodes.set(email, {
+      code,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      purpose: "2fa_login",
+    });
+
+    console.log(`2FA Login Code for ${email}: ${code}`);
+
+    // Try to send email
+    try {
+      await transporter.sendMail({
+        from: '"DesignDen Security" <designden.noreply@gmail.com>',
+        to: email,
+        subject: "Login Verification Code - DesignDen",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #4F46E5;">Login Verification</h2>
+            <p>Hello ${user.name || user.username},</p>
+            <p>Your login verification code is:</p>
+            <div style="background: #f3f4f6; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4F46E5;">${code}</span>
+            </div>
+            <p>This code will expire in 5 minutes.</p>
+            <p>If you didn't try to log in, please secure your account immediately.</p>
+          </div>
+        `,
+      });
+    } catch (emailError) {
+      console.log("Email not sent, using console code");
+    }
+
+    res.json({
+      success: true,
+      message: "Verification code sent to your email",
+      devCode: process.env.NODE_ENV !== "production" ? code : undefined,
+    });
+  } catch (error) {
+    console.error("Send login code error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Disable 2FA
+app.post("/api/auth/2fa/disable", async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not authenticated" });
+    }
+
+    const { password } = req.body;
+    if (!password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Password required" });
+    }
+
+    const user = await User.findById(req.session.user.id);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid password" });
+    }
+
+    // Disable 2FA
+    user.twoFactorEnabled = false;
+    await user.save();
+
+    // Update session
+    req.session.user.twoFactorEnabled = false;
+
+    res.json({
+      success: true,
+      message: "Two-factor authentication disabled successfully",
+    });
+  } catch (error) {
+    console.error("2FA disable error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Get 2FA status
+app.get("/api/auth/2fa/status", async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not authenticated" });
+    }
+
+    const user = await User.findById(req.session.user.id);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.json({
+      success: true,
+      enabled: user.twoFactorEnabled || false,
+      method: "email",
+    });
+  } catch (error) {
+    console.error("2FA status error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Regenerate backup codes
+app.post("/api/auth/2fa/backup-codes", async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not authenticated" });
+    }
+
+    const { password } = req.body;
+    if (!password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Password required" });
+    }
+
+    const user = await User.findById(req.session.user.id);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    if (!user.twoFactorEnabled) {
+      return res
+        .status(400)
+        .json({ success: false, message: "2FA is not enabled" });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid password" });
+    }
+
+    // Generate new backup codes
+    const backupCodes = [];
+    for (let i = 0; i < 10; i++) {
+      backupCodes.push(
+        Math.random().toString(36).substring(2, 10).toUpperCase(),
+      );
+    }
+
+    user.twoFactorBackupCodes = backupCodes;
+    await user.save();
+
+    res.json({
+      success: true,
+      backupCodes: backupCodes,
+      message: "New backup codes generated",
+    });
+  } catch (error) {
+    console.error("Backup codes error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 // Product Routes
 app.get("/api/shop/products", async (req, res) => {
   try {
@@ -761,6 +1273,397 @@ app.get("/api/shop/featured", async (req, res) => {
     res.json({ success: true, products });
   } catch (error) {
     console.error("Error fetching featured products:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ============================================
+// PUBLIC DESIGNER LISTING API (For Customer Selection)
+// ============================================
+
+// Get all available designers with their profiles
+app.get("/api/designers", async (req, res) => {
+  try {
+    const { specialization, minRating, sortBy } = req.query;
+
+    let query = {
+      role: "designer",
+      approved: true,
+      "designerProfile.isAvailable": { $ne: false },
+    };
+
+    // Filter by specialization
+    if (specialization) {
+      query["designerProfile.specializations"] = {
+        $regex: new RegExp(specialization, "i"),
+      };
+    }
+
+    // Filter by minimum rating
+    if (minRating) {
+      query["designerProfile.rating"] = { $gte: Number(minRating) };
+    }
+
+    let sortOption = { "designerProfile.rating": -1 }; // Default sort by rating
+
+    switch (sortBy) {
+      case "rating":
+        sortOption = { "designerProfile.rating": -1 };
+        break;
+      case "experience":
+        sortOption = { "designerProfile.experience": -1 };
+        break;
+      case "orders":
+        sortOption = { "designerProfile.completedOrders": -1 };
+        break;
+      case "price-low":
+        sortOption = { "designerProfile.priceRange.min": 1 };
+        break;
+      case "price-high":
+        sortOption = { "designerProfile.priceRange.max": -1 };
+        break;
+      case "turnaround":
+        sortOption = { "designerProfile.turnaroundDays": 1 };
+        break;
+    }
+
+    const designers = await User.find(query)
+      .select("name email designerProfile")
+      .sort(sortOption);
+
+    // Transform data for frontend
+    const designerList = designers.map((designer) => ({
+      _id: designer._id,
+      name: designer.name || designer.email?.split("@")[0] || "Designer",
+      email: designer.email,
+      bio:
+        designer.designerProfile?.bio ||
+        "Passionate clothing designer ready to bring your vision to life.",
+      specializations: designer.designerProfile?.specializations || [
+        "Custom Clothing",
+      ],
+      experience: designer.designerProfile?.experience || 1,
+      portfolio: designer.designerProfile?.portfolio || [],
+      rating: designer.designerProfile?.rating || 4.0,
+      totalRatings: designer.designerProfile?.totalRatings || 0,
+      completedOrders: designer.designerProfile?.completedOrders || 0,
+      isAvailable: designer.designerProfile?.isAvailable !== false,
+      priceRange: designer.designerProfile?.priceRange || {
+        min: 500,
+        max: 3000,
+      },
+      turnaroundDays: designer.designerProfile?.turnaroundDays || 7,
+      featuredWork: designer.designerProfile?.featuredWork || null,
+      badges: designer.designerProfile?.badges || [],
+    }));
+
+    res.json({
+      success: true,
+      designers: designerList,
+      count: designerList.length,
+    });
+  } catch (error) {
+    console.error("Error fetching designers:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Get single designer profile
+app.get("/api/designers/:id", async (req, res) => {
+  try {
+    const designer = await User.findOne({
+      _id: req.params.id,
+      role: "designer",
+    }).select("name email designerProfile");
+
+    if (!designer) {
+      return res.status(404).json({
+        success: false,
+        message: "Designer not found",
+      });
+    }
+
+    const designerData = {
+      _id: designer._id,
+      name: designer.name || designer.email?.split("@")[0] || "Designer",
+      email: designer.email,
+      bio:
+        designer.designerProfile?.bio ||
+        "Passionate clothing designer ready to bring your vision to life.",
+      specializations: designer.designerProfile?.specializations || [
+        "Custom Clothing",
+      ],
+      experience: designer.designerProfile?.experience || 1,
+      portfolio: designer.designerProfile?.portfolio || [],
+      rating: designer.designerProfile?.rating || 4.0,
+      totalRatings: designer.designerProfile?.totalRatings || 0,
+      completedOrders: designer.designerProfile?.completedOrders || 0,
+      isAvailable: designer.designerProfile?.isAvailable !== false,
+      priceRange: designer.designerProfile?.priceRange || {
+        min: 500,
+        max: 3000,
+      },
+      turnaroundDays: designer.designerProfile?.turnaroundDays || 7,
+      featuredWork: designer.designerProfile?.featuredWork || null,
+      badges: designer.designerProfile?.badges || [],
+    };
+
+    res.json({ success: true, designer: designerData });
+  } catch (error) {
+    console.error("Error fetching designer:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Initialize designer profiles with sample data (one-time setup endpoint)
+app.post("/api/designers/init-profiles", async (req, res) => {
+  try {
+    const designers = await User.find({ role: "designer" });
+
+    const sampleBios = [
+      "Award-winning fashion designer with a passion for sustainable clothing. Specializing in modern ethnic wear and fusion designs.",
+      "Creative designer focused on bringing your unique style to life. Expert in casual wear and streetwear aesthetics.",
+      "Experienced tailor and designer. Known for precision fitting and attention to detail in formal and business attire.",
+      "Young and innovative designer pushing boundaries in contemporary fashion. Loves experimenting with bold patterns and colors.",
+    ];
+
+    const sampleSpecializations = [
+      ["T-Shirts", "Casual Wear", "Streetwear"],
+      ["Ethnic Wear", "Fusion", "Party Wear"],
+      ["Formal Wear", "Business Attire", "Suits"],
+      ["Kids Wear", "Family Matching", "Casual"],
+    ];
+
+    const sampleBadges = [
+      ["Top Rated", "Fast Delivery"],
+      ["Premium Designer", "Best Seller"],
+      ["Quick Response", "Customer Favorite"],
+      ["New Talent", "Rising Star"],
+    ];
+
+    // 3D Model work samples for designers
+    const samplePortfolios = [
+      [
+        {
+          image:
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop",
+          title: "T-Shirt 3D Model",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop",
+          title: "Casual Wear Design",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400&h=400&fit=crop",
+          title: "Custom Hoodie",
+        },
+      ],
+      [
+        {
+          image:
+            "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&h=400&fit=crop",
+          title: "Polo Shirt Model",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400&h=400&fit=crop",
+          title: "Graphic Design",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=400&h=400&fit=crop",
+          title: "Sports Jersey",
+        },
+      ],
+      [
+        {
+          image:
+            "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=400&h=400&fit=crop",
+          title: "Sweatshirt Design",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop",
+          title: "Street Style Tee",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&h=400&fit=crop",
+          title: "Printed T-Shirt",
+        },
+      ],
+      [
+        {
+          image:
+            "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&h=400&fit=crop",
+          title: "Basic Tee Model",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1571455786673-9d9d6c194f90?w=400&h=400&fit=crop",
+          title: "Tank Top Design",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1618354691438-25bc04584c23?w=400&h=400&fit=crop",
+          title: "Long Sleeve Shirt",
+        },
+      ],
+    ];
+
+    let updated = 0;
+    for (let i = 0; i < designers.length; i++) {
+      const designer = designers[i];
+
+      // Only update if profile is empty
+      if (!designer.designerProfile?.bio) {
+        designer.designerProfile = {
+          bio: sampleBios[i % sampleBios.length],
+          specializations:
+            sampleSpecializations[i % sampleSpecializations.length],
+          experience: Math.floor(Math.random() * 10) + 1,
+          portfolio: samplePortfolios[i % samplePortfolios.length],
+          rating: (3.5 + Math.random() * 1.5).toFixed(1),
+          totalRatings: Math.floor(Math.random() * 100) + 10,
+          completedOrders: Math.floor(Math.random() * 200) + 20,
+          isAvailable: true,
+          priceRange: {
+            min: [500, 800, 1000, 1200][Math.floor(Math.random() * 4)],
+            max: [2000, 3000, 4000, 5000][Math.floor(Math.random() * 4)],
+          },
+          turnaroundDays: [3, 5, 7, 10][Math.floor(Math.random() * 4)],
+          badges: sampleBadges[i % sampleBadges.length],
+        };
+        await designer.save();
+        updated++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Initialized ${updated} designer profiles`,
+      total: designers.length,
+    });
+  } catch (error) {
+    console.error("Error initializing designer profiles:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Force update designer portfolios with new images
+app.post("/api/designers/update-portfolios", async (req, res) => {
+  try {
+    const designers = await User.find({ role: "designer" });
+
+    // 3D Model work samples for designers
+    const samplePortfolios = [
+      [
+        {
+          image:
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop",
+          title: "T-Shirt 3D Model",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop",
+          title: "Casual Wear Design",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400&h=400&fit=crop",
+          title: "Custom Hoodie",
+        },
+      ],
+      [
+        {
+          image:
+            "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&h=400&fit=crop",
+          title: "Polo Shirt Model",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400&h=400&fit=crop",
+          title: "Graphic Design",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=400&h=400&fit=crop",
+          title: "Sports Jersey",
+        },
+      ],
+      [
+        {
+          image:
+            "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=400&h=400&fit=crop",
+          title: "Sweatshirt Design",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop",
+          title: "Street Style Tee",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&h=400&fit=crop",
+          title: "Printed T-Shirt",
+        },
+      ],
+      [
+        {
+          image:
+            "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&h=400&fit=crop",
+          title: "Basic Tee Model",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1571455786673-9d9d6c194f90?w=400&h=400&fit=crop",
+          title: "Tank Top Design",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1618354691438-25bc04584c23?w=400&h=400&fit=crop",
+          title: "Long Sleeve Shirt",
+        },
+      ],
+      [
+        {
+          image:
+            "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=400&h=400&fit=crop",
+          title: "V-Neck Design",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400&h=400&fit=crop",
+          title: "Crew Neck Model",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&h=400&fit=crop",
+          title: "Custom Kurta",
+        },
+      ],
+    ];
+
+    let updated = 0;
+    for (let i = 0; i < designers.length; i++) {
+      const designer = designers[i];
+      if (designer.designerProfile) {
+        designer.designerProfile.portfolio =
+          samplePortfolios[i % samplePortfolios.length];
+        await designer.save();
+        updated++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Updated portfolios for ${updated} designers`,
+      total: designers.length,
+    });
+  } catch (error) {
+    console.error("Error updating designer portfolios:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
@@ -1078,7 +1981,7 @@ app.put("/api/admin/products/:id/stock", async (req, res) => {
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       { inStock, stockQuantity: inStock ? 100 : 0 },
-      { new: true }
+      { new: true },
     );
     if (!product) {
       return res
@@ -1346,7 +2249,7 @@ app.get("/api/pincode/:pincode", async (req, res) => {
     try {
       const response = await axios.get(
         `https://api.postalpincode.in/pincode/${pincode}`,
-        { timeout: 5000 }
+        { timeout: 5000 },
       );
 
       if (
@@ -1491,7 +2394,7 @@ app.get("/designer/order/:id", async (req, res) => {
       .populate("items.productId", "name images price description")
       .populate(
         "items.designId",
-        "name graphic basePrice estimatedPrice category fabric color size customText"
+        "name graphic basePrice estimatedPrice category fabric color size customText",
       )
       .populate("designerId", "username email")
       .lean();
@@ -1533,7 +2436,7 @@ app.get("/designer/api/orders", async (req, res) => {
       .populate("items.productId", "name images price")
       .populate(
         "items.designId",
-        "name graphic basePrice estimatedPrice category fabric color size customText"
+        "name graphic basePrice estimatedPrice category fabric color size customText",
       )
       .populate("managerId", "username email")
       .populate("designerId", "username email")
@@ -1912,7 +2815,7 @@ app.get("/manager/order/:id", async (req, res) => {
       .populate("items.productId", "name images price description")
       .populate(
         "items.designId",
-        "name graphic basePrice estimatedPrice category fabric color size customText"
+        "name graphic basePrice estimatedPrice category fabric color size customText",
       )
       .populate("managerId", "username email")
       .populate("designerId", "username email")
@@ -2215,7 +3118,7 @@ app.post("/designer/order/:id/start-production", async (req, res) => {
 
     const order = await Order.findById(req.params.id).populate(
       "userId",
-      "username email"
+      "username email",
     );
 
     if (!order) {
@@ -2289,7 +3192,7 @@ app.post("/designer/order/:id/mark-ready", async (req, res) => {
     const { completionNote } = req.body;
     const order = await Order.findById(req.params.id).populate(
       "userId",
-      "username email"
+      "username email",
     );
 
     if (!order) {
@@ -2349,7 +3252,7 @@ app.post("/designer/order/:id/mark-ready", async (req, res) => {
           .toString()
           .substring(
             0,
-            8
+            8,
           )} ready for shipping - Designer has completed production`,
         type: "info",
       });
@@ -2399,7 +3302,7 @@ app.get("/delivery/dashboard", async (req, res) => {
           .length,
         pickedUp: assignedOrders.filter((o) => o.status === "picked_up").length,
         inTransit: assignedOrders.filter(
-          (o) => o.status === "in_transit" || o.status === "out_for_delivery"
+          (o) => o.status === "in_transit" || o.status === "out_for_delivery",
         ).length,
       },
     });
@@ -2438,7 +3341,7 @@ app.post("/delivery/order/:id/update-status", async (req, res) => {
     // Validate status transition
     if (
       !["picked_up", "in_transit", "out_for_delivery", "delivered"].includes(
-        status
+        status,
       )
     ) {
       return res.status(400).json({
@@ -2670,7 +3573,7 @@ app.get("/customer/order/:id", async (req, res) => {
       .populate("items.productId", "name images price description")
       .populate(
         "items.designId",
-        "name graphic basePrice estimatedPrice category fabric color size customText"
+        "name graphic basePrice estimatedPrice category fabric color size customText",
       )
       .populate("deliveryPersonId", "name contactNumber")
       .lean();
@@ -3299,6 +4202,7 @@ app.post("/customer/api/process-checkout", async (req, res) => {
       saveAddress, // New field to check if user wants to save address
       paymentMethod, // Payment method: card, upi, netbanking, cod
       paymentStatus, // Payment status: pending, completed, failed
+      selectedDesignerId, // Customer-selected designer for custom orders
     } = req.body;
 
     // Get user for updating profile
@@ -3331,7 +4235,7 @@ app.post("/customer/api/process-checkout", async (req, res) => {
           addr.street === deliveryAddress &&
           addr.city === city &&
           addr.state === state &&
-          addr.pincode === pincode
+          addr.pincode === pincode,
       );
 
       if (!addressExists) {
@@ -3394,7 +4298,7 @@ app.post("/customer/api/process-checkout", async (req, res) => {
 
         await product.save();
         console.log(
-          `Stock updated for ${product.name}: ${product.stockQuantity} remaining`
+          `Stock updated for ${product.name}: ${product.stockQuantity} remaining`,
         );
       } else if (item.designId) {
         price = item.designId.basePrice || item.designId.estimatedPrice || 500;
@@ -3447,28 +4351,86 @@ app.post("/customer/api/process-checkout", async (req, res) => {
     await order.save();
     console.log("Order created:", order._id);
 
-    // Auto-assign to first available manager
-    const manager = await User.findOne({ role: "manager" });
-    if (manager) {
-      order.managerId = manager._id;
-      order.status = "assigned_to_manager";
-      order.managerAssignedAt = new Date();
-      order.timeline.push({
-        status: "assigned_to_manager",
-        note: `Order automatically assigned to manager ${manager.name}`,
-        at: new Date(),
-      });
-      await order.save();
+    // Check if this is a custom order with customer-selected designer
+    const isCustomOrder = orderItems.some(
+      (item) => item.designId && !item.productId,
+    );
 
-      // Notify manager
-      await Notification.create({
-        userId: manager._id,
-        orderId: order._id,
-        message: `New order #${order._id
-          .toString()
-          .substring(0, 8)} assigned to you`,
-        type: "info",
+    if (isCustomOrder && selectedDesignerId) {
+      // Customer selected a designer - directly assign to designer (skip manager)
+      const selectedDesigner = await User.findOne({
+        _id: selectedDesignerId,
+        role: "designer",
+        approved: true,
       });
+
+      if (selectedDesigner) {
+        order.designerId = selectedDesigner._id;
+        order.status = "assigned_to_designer";
+        order.designerAssignedAt = new Date();
+        order.orderType = "custom";
+        order.chatEnabled = true;
+        order.timeline.push({
+          status: "assigned_to_designer",
+          note: `Custom order directly assigned to designer ${
+            selectedDesigner.name || selectedDesigner.email
+          } (Customer selected)`,
+          at: new Date(),
+        });
+        await order.save();
+
+        // Notify designer
+        await Notification.create({
+          userId: selectedDesigner._id,
+          orderId: order._id,
+          message: `🎨 New custom order #${order._id
+            .toString()
+            .substring(
+              0,
+              8,
+            )} assigned to you! Customer chose you as their designer.`,
+          type: "success",
+        });
+
+        console.log(
+          `Custom order assigned directly to designer: ${selectedDesigner.name}`,
+        );
+      } else {
+        // Fallback to manager if selected designer not found
+        console.log(
+          "Selected designer not found, falling back to manager assignment",
+        );
+        await assignToManager(order);
+      }
+    } else {
+      // Regular flow - assign to manager
+      await assignToManager(order);
+    }
+
+    // Helper function for manager assignment
+    async function assignToManager(order) {
+      const manager = await User.findOne({ role: "manager" });
+      if (manager) {
+        order.managerId = manager._id;
+        order.status = "assigned_to_manager";
+        order.managerAssignedAt = new Date();
+        order.timeline.push({
+          status: "assigned_to_manager",
+          note: `Order automatically assigned to manager ${manager.name}`,
+          at: new Date(),
+        });
+        await order.save();
+
+        // Notify manager
+        await Notification.create({
+          userId: manager._id,
+          orderId: order._id,
+          message: `New order #${order._id
+            .toString()
+            .substring(0, 8)} assigned to you`,
+          type: "info",
+        });
+      }
     }
 
     // Create notification for customer
@@ -3517,7 +4479,7 @@ app.post("/manager/api/order/:id/assign-designer", async (req, res) => {
     const { designerId } = req.body;
     const order = await Order.findById(req.params.id).populate(
       "userId",
-      "name email"
+      "name email",
     );
 
     if (!order) {
@@ -3601,7 +4563,7 @@ app.post("/manager/api/order/:id/assign-delivery", async (req, res) => {
     const { deliveryPersonId } = req.body;
     const order = await Order.findById(req.params.id).populate(
       "userId",
-      "name email"
+      "name email",
     );
 
     if (!order) {
@@ -3770,7 +4732,7 @@ app.post("/designer/api/order/:id/start-production", async (req, res) => {
 
     const order = await Order.findById(req.params.id).populate(
       "userId",
-      "name email"
+      "name email",
     );
 
     if (!order) {
@@ -3830,7 +4792,7 @@ app.put("/designer/api/order/:id/progress", async (req, res) => {
     const { progressPercentage, note } = req.body;
     const order = await Order.findById(req.params.id).populate(
       "userId",
-      "name email"
+      "name email",
     );
 
     if (!order) {
@@ -3925,7 +4887,7 @@ app.post("/designer/api/order/:id/complete", async (req, res) => {
           .toString()
           .substring(
             0,
-            8
+            8,
           )} production completed - Ready to assign for delivery`,
         type: "success",
       });
@@ -3984,7 +4946,7 @@ app.get("/customer/api/order/:id/tracking", async (req, res) => {
     // Only customer or staff can view tracking
     const isOwner = order.userId._id.toString() === req.session.user.id;
     const isStaff = ["admin", "manager", "designer", "delivery"].includes(
-      req.session.user.role
+      req.session.user.role,
     );
 
     if (!isOwner && !isStaff) {
@@ -4045,7 +5007,7 @@ app.get("/manager/api/delivery-persons", async (req, res) => {
     }
 
     const deliveryPersons = await User.find({ role: "delivery" }).select(
-      "name email contactNumber"
+      "name email contactNumber",
     );
 
     res.json({ success: true, deliveryPersons });
@@ -4063,7 +5025,7 @@ app.get("/manager/api/designers", async (req, res) => {
     }
 
     const designers = await User.find({ role: "designer" }).select(
-      "name email contactNumber"
+      "name email contactNumber",
     );
 
     res.json({ success: true, designers });
@@ -4382,7 +5344,7 @@ app.post("/manager/api/order/:id/ship", async (req, res) => {
     const { deliveryPersonId, deliveryPartnerId, deliverySlot } = req.body;
     const order = await Order.findById(req.params.id).populate(
       "userId",
-      "name email phone"
+      "name email phone",
     );
 
     if (!order) {
@@ -4429,7 +5391,7 @@ app.post("/manager/api/order/:id/ship", async (req, res) => {
     const today = new Date();
     const deliveryDays = partner?.avgDeliveryDays || 3;
     const estimatedFrom = new Date(
-      today.setDate(today.getDate() + deliveryDays - 1)
+      today.setDate(today.getDate() + deliveryDays - 1),
     );
     const estimatedTo = new Date(today.setDate(today.getDate() + 2));
 
@@ -4521,7 +5483,7 @@ app.post("/delivery/api/order/:id/pickup", async (req, res) => {
 
     const order = await Order.findById(req.params.id).populate(
       "userId",
-      "name email phone"
+      "name email phone",
     );
 
     if (!order) {
@@ -4628,7 +5590,7 @@ app.post("/delivery/api/order/:id/in-transit", async (req, res) => {
     const { location } = req.body;
     const order = await Order.findById(req.params.id).populate(
       "userId",
-      "name email"
+      "name email",
     );
 
     if (!order || order.deliveryPersonId?.toString() !== req.session.user.id) {
@@ -4662,7 +5624,7 @@ app.post("/delivery/api/order/:id/out-for-delivery", async (req, res) => {
 
     const order = await Order.findById(req.params.id).populate(
       "userId",
-      "name email phone"
+      "name email phone",
     );
 
     if (!order || order.deliveryPersonId?.toString() !== req.session.user.id) {
@@ -4748,7 +5710,7 @@ app.post("/delivery/api/order/:id/deliver", async (req, res) => {
       "OTP Verification - Entered:",
       enteredOTP,
       "Actual:",
-      actualOTP
+      actualOTP,
     );
 
     if (enteredOTP !== actualOTP) {
@@ -4860,7 +5822,7 @@ app.get("/api/order/:orderId/messages", async (req, res) => {
     // Mark messages as read
     await Message.updateMany(
       { orderId: req.params.orderId, receiverId: userId, read: false },
-      { read: true, readAt: new Date() }
+      { read: true, readAt: new Date() },
     );
 
     res.json({ success: true, messages });
@@ -4933,7 +5895,7 @@ app.post("/api/order/:orderId/messages", async (req, res) => {
       orderId: order._id,
       message: `New message from ${senderRole}: "${message.substring(
         0,
-        50
+        50,
       )}..."`,
       type: "info",
     });
@@ -5019,7 +5981,7 @@ app.post("/api/order/:orderId/milestones", async (req, res) => {
     const { milestone, status, notes, images } = req.body;
     const order = await Order.findById(req.params.orderId).populate(
       "userId",
-      "name email"
+      "name email",
     );
 
     if (!order || order.designerId?.toString() !== req.session.user.id) {
@@ -5066,7 +6028,7 @@ app.post("/api/order/:orderId/milestones", async (req, res) => {
 
     const milestoneIndex = milestoneOrder.indexOf(milestone);
     const progress = Math.round(
-      ((milestoneIndex + 1) / milestoneOrder.length) * 100
+      ((milestoneIndex + 1) / milestoneOrder.length) * 100,
     );
 
     order.currentMilestone = milestone;
@@ -5074,7 +6036,7 @@ app.post("/api/order/:orderId/milestones", async (req, res) => {
 
     // Add to order milestones array
     const orderMilestoneIndex = order.milestones?.findIndex(
-      (m) => m.name === milestone
+      (m) => m.name === milestone,
     );
     if (orderMilestoneIndex > -1) {
       order.milestones[orderMilestoneIndex] = {
@@ -5111,7 +6073,7 @@ app.post("/api/order/:orderId/milestones", async (req, res) => {
       orderId: order._id,
       message: `Progress update: ${milestone.replace(
         /_/g,
-        " "
+        " ",
       )} - ${status}. Your order is ${progress}% complete!`,
       type: "info",
     });
@@ -5395,6 +6357,205 @@ app.get("/delivery/api/statistics", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// Initialize sample designers if none exist
+async function initializeSampleDesigners() {
+  try {
+    const designerCount = await User.countDocuments({
+      role: "designer",
+      approved: true,
+    });
+
+    if (designerCount < 3) {
+      console.log("Creating sample designers for demo...");
+
+      const sampleDesigners = [
+        {
+          email: "priya.designer@example.com",
+          password: await bcrypt.hash("password123", 10),
+          name: "Priya Sharma",
+          role: "designer",
+          approved: true,
+          contactNumber: "9876543210",
+          designerProfile: {
+            bio: "Award-winning fashion designer with 8 years of experience. Specializing in elegant ethnic wear and modern fusion designs that blend traditional craftsmanship with contemporary aesthetics.",
+            specializations: ["Ethnic Wear", "Fusion", "Party Wear", "Bridal"],
+            experience: 8,
+            portfolio: [
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=400&fit=crop",
+                title: "Bridal Lehenga",
+              },
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=400&fit=crop",
+                title: "Silk Saree",
+              },
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&h=400&fit=crop",
+                title: "Ethnic Kurta",
+              },
+            ],
+            rating: 4.8,
+            totalRatings: 156,
+            completedOrders: 234,
+            isAvailable: true,
+            priceRange: { min: 1500, max: 5000 },
+            turnaroundDays: 5,
+            badges: ["Top Rated", "Premium Designer", "Quick Delivery"],
+          },
+        },
+        {
+          email: "rahul.designer@example.com",
+          password: await bcrypt.hash("password123", 10),
+          name: "Rahul Verma",
+          role: "designer",
+          approved: true,
+          contactNumber: "9876543211",
+          designerProfile: {
+            bio: "Creative streetwear designer focused on bold, unique styles. Expert in casual wear, T-shirt designs, and urban fashion that makes you stand out from the crowd.",
+            specializations: [
+              "T-Shirts",
+              "Casual Wear",
+              "Streetwear",
+              "Hoodies",
+            ],
+            experience: 5,
+            portfolio: [
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400&h=400&fit=crop",
+                title: "Graphic Tees",
+              },
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop",
+                title: "Street Style",
+              },
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=400&h=400&fit=crop",
+                title: "Hoodie Collection",
+              },
+            ],
+            rating: 4.5,
+            totalRatings: 89,
+            completedOrders: 145,
+            isAvailable: true,
+            priceRange: { min: 800, max: 2500 },
+            turnaroundDays: 3,
+            badges: ["Fast Delivery", "Rising Star", "Customer Favorite"],
+          },
+        },
+        {
+          email: "anita.designer@example.com",
+          password: await bcrypt.hash("password123", 10),
+          name: "Anita Patel",
+          role: "designer",
+          approved: true,
+          contactNumber: "9876543212",
+          designerProfile: {
+            bio: "Experienced tailor and formal wear specialist with precision fitting skills. Known for impeccable business attire, suits, and professional clothing that makes lasting impressions.",
+            specializations: [
+              "Formal Wear",
+              "Business Attire",
+              "Suits",
+              "Dresses",
+            ],
+            experience: 12,
+            portfolio: [
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400&h=400&fit=crop",
+                title: "Executive Suits",
+              },
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=400&h=400&fit=crop",
+                title: "Formal Dresses",
+              },
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?w=400&h=400&fit=crop",
+                title: "Business Shirts",
+              },
+            ],
+            rating: 4.9,
+            totalRatings: 203,
+            completedOrders: 312,
+            isAvailable: true,
+            priceRange: { min: 2000, max: 8000 },
+            turnaroundDays: 7,
+            badges: ["Top Rated", "Expert Tailor", "Premium"],
+          },
+        },
+        {
+          email: "kiran.designer@example.com",
+          password: await bcrypt.hash("password123", 10),
+          name: "Kiran Reddy",
+          role: "designer",
+          approved: true,
+          contactNumber: "9876543213",
+          designerProfile: {
+            bio: "Young and innovative designer pushing boundaries in sustainable fashion. Eco-friendly designs using organic fabrics and ethical production methods.",
+            specializations: [
+              "Sustainable Fashion",
+              "Eco-Friendly",
+              "Casual",
+              "Kids Wear",
+            ],
+            experience: 3,
+            portfolio: [
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&h=400&fit=crop",
+                title: "Organic Cotton",
+              },
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=400&h=400&fit=crop",
+                title: "Kids Collection",
+              },
+              {
+                imageUrl:
+                  "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&h=400&fit=crop",
+                title: "Eco Fashion",
+              },
+            ],
+            rating: 4.3,
+            totalRatings: 45,
+            completedOrders: 67,
+            isAvailable: true,
+            priceRange: { min: 600, max: 2000 },
+            turnaroundDays: 4,
+            badges: ["Eco Champion", "New Talent", "Quick Response"],
+          },
+        },
+      ];
+
+      for (const designerData of sampleDesigners) {
+        const existingDesigner = await User.findOne({
+          email: designerData.email,
+        });
+        if (!existingDesigner) {
+          await User.create(designerData);
+          console.log(`Created sample designer: ${designerData.name}`);
+        }
+      }
+
+      console.log("Sample designers initialized successfully!");
+    }
+  } catch (error) {
+    console.error("Error initializing sample designers:", error);
+  }
+}
+
+// Run initialization when server starts
+mongoose.connection.once("open", () => {
+  initializeSampleDesigners();
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });

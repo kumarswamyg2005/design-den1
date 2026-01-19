@@ -8,7 +8,8 @@ import { useCart } from "../../context/CartContext";
 import { useCartAnimation } from "../../hooks/useCartAnimation";
 import ProductReviews from "../../components/ProductReviews";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5174";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://backend-gw9o.onrender.com";
 
 function ProductDetails() {
   const { id } = useParams();
@@ -112,7 +113,7 @@ function ProductDetails() {
       console.error("Error adding to cart:", error);
       showFlash(
         error.response?.data?.message || "Error adding to cart",
-        "danger"
+        "danger",
       );
     } finally {
       setAddingToCart(false);
@@ -122,7 +123,7 @@ function ProductDetails() {
   const nextImage = () => {
     if (product && product.images) {
       setCurrentImageIndex((prev) =>
-        prev === product.images.length - 1 ? 0 : prev + 1
+        prev === product.images.length - 1 ? 0 : prev + 1,
       );
     }
   };
@@ -130,7 +131,7 @@ function ProductDetails() {
   const prevImage = () => {
     if (product && product.images) {
       setCurrentImageIndex((prev) =>
-        prev === 0 ? product.images.length - 1 : prev - 1
+        prev === 0 ? product.images.length - 1 : prev - 1,
       );
     }
   };
@@ -319,8 +320,8 @@ function ProductDetails() {
                         justAdded
                           ? "btn-success success"
                           : addingToCart
-                          ? "btn-primary adding"
-                          : "btn-primary"
+                            ? "btn-primary adding"
+                            : "btn-primary"
                       }`}
                       disabled={!product.inStock || addingToCart}
                     >

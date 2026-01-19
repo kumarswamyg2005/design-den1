@@ -7,7 +7,8 @@ import { useCartAnimation } from "../../hooks/useCartAnimation";
 import ModelViewer from "../../components/ModelViewer";
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5174";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://backend-gw9o.onrender.com";
 
 const DesignStudio = () => {
   const navigate = useNavigate();
@@ -106,7 +107,7 @@ const DesignStudio = () => {
         try {
           const response = await axios.get(
             `${API_BASE_URL}/customer/designs/${designId}`,
-            { withCredentials: true }
+            { withCredentials: true },
           );
           if (response.data.success && response.data.design) {
             const design = response.data.design;
@@ -162,7 +163,7 @@ const DesignStudio = () => {
       setTimeout(() => setShakeError(false), 600);
       showFlash(
         "🚫 Please select a graphic design to customize your clothing!",
-        "danger"
+        "danger",
       );
       return false;
     }
@@ -262,7 +263,7 @@ const DesignStudio = () => {
     } catch (error) {
       showFlash(
         error.response?.data?.message || "Failed to save design",
-        "error"
+        "error",
       );
     } finally {
       setSubmitting(false);
@@ -467,7 +468,7 @@ const DesignStudio = () => {
                     {graphics.map((graphic) => {
                       const isOutOfStock = graphic.inStock === false;
                       console.log(
-                        `Graphic ${graphic._id}: inStock=${graphic.inStock}, isOutOfStock=${isOutOfStock}`
+                        `Graphic ${graphic._id}: inStock=${graphic.inStock}, isOutOfStock=${isOutOfStock}`,
                       );
                       return (
                         <div key={graphic._id} className="col-3">
@@ -659,8 +660,8 @@ const DesignStudio = () => {
                         sustainabilityScore >= 70
                           ? "bg-success"
                           : sustainabilityScore >= 50
-                          ? "bg-warning"
-                          : "bg-danger"
+                            ? "bg-warning"
+                            : "bg-danger"
                       }`}
                       role="progressbar"
                       style={{ width: `${sustainabilityScore}%` }}
@@ -675,8 +676,8 @@ const DesignStudio = () => {
                   {sustainabilityScore >= 70
                     ? "Excellent eco-friendly choice!"
                     : sustainabilityScore >= 50
-                    ? "Good sustainable option"
-                    : "Consider more sustainable fabrics"}
+                      ? "Good sustainable option"
+                      : "Consider more sustainable fabrics"}
                 </small>
               </div>
 

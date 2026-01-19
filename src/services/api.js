@@ -1,8 +1,10 @@
 import axios from "axios";
 
 // Create axios instance with default config
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://backend-gw9o.onrender.com";
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5174",
+  baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
     "X-Requested-With": "XMLHttpRequest",
@@ -17,7 +19,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor
@@ -26,23 +28,16 @@ api.interceptors.response.use(
   (error) => {
     // Check if it's a network error (backend not running)
     if (!error.response) {
-      console.error(
-        "❌ Backend server is not running on http://localhost:3001"
-      );
-      alert(
-        "Backend server is not running. Please start the backend server with: node server.cjs"
-      );
+      console.error("❌ Cannot connect to backend server");
       return Promise.reject(
-        new Error(
-          "Backend server is not running. Please start the backend at http://localhost:3001"
-        )
+        new Error("Cannot connect to backend server. Please try again later."),
       );
     }
 
     // Don't auto-redirect on 401 - let the ProtectedRoute handle it
     // This prevents back button from going to login
     return Promise.reject(error);
-  }
+  },
 );
 
 // Auth API
@@ -51,6 +46,13 @@ export const authAPI = {
   signup: (data) => api.post("/api/auth/signup", data),
   logout: () => api.post("/api/auth/logout"),
   checkSession: () => api.get("/api/auth/session"),
+  // 2FA endpoints (email-based)
+  setup2FA: () => api.post("/api/auth/2fa/setup"),
+  verify2FA: (token) => api.post("/api/auth/2fa/verify", { token }),
+  disable2FA: (password) => api.post("/api/auth/2fa/disable", { password }),
+  get2FAStatus: () => api.get("/api/auth/2fa/status"),
+  sendLoginCode: (email) =>
+    api.post("/api/auth/2fa/send-login-code", { email }),
 };
 
 // Customer API

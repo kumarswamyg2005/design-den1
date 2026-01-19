@@ -4,7 +4,8 @@ import { shopAPI } from "../../services/api";
 import { formatPrice } from "../../utils/currency";
 import { useFlash } from "../../context/FlashContext";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5174";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://backend-gw9o.onrender.com";
 
 const ShopIndex = () => {
   const [searchParams, setSearchParams] = useSearchParams();

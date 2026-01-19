@@ -17,6 +17,10 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
+  // 2FA state
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -53,8 +57,22 @@ const Login = () => {
     setLoading(true);
     try {
       console.log("Attempting login with:", formData.email);
-      const result = await login(formData);
+
+      // Include 2FA code if required
+      const credentials = {
+        ...formData,
+        ...(requires2FA && { twoFactorCode }),
+      };
+
+      const result = await login(credentials);
       console.log("Login result:", result);
+
+      // Check if 2FA is required
+      if (result.requires2FA) {
+        setRequires2FA(true);
+        setLoading(false);
+        return;
+      }
 
       success("Login successful!");
 
@@ -65,6 +83,8 @@ const Login = () => {
         navigate("/designer/dashboard");
       } else if (result.user?.role === "manager") {
         navigate("/manager/dashboard");
+      } else if (result.user?.role === "delivery") {
+        navigate("/delivery/dashboard");
       } else {
         navigate("/customer/dashboard");
       }
@@ -74,10 +94,21 @@ const Login = () => {
         err.response?.data?.message ||
         err.message ||
         "Login failed. Please try again.";
-      error(message);
+
+      // Check if 2FA is required from error response
+      if (err.response?.data?.requires2FA) {
+        setRequires2FA(true);
+      } else {
+        error(message);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBack = () => {
+    setRequires2FA(false);
+    setTwoFactorCode("");
   };
 
   return (
@@ -85,7 +116,11 @@ const Login = () => {
       <div className="col-md-6">
         <div className="card shadow-sm">
           <div className="card-body p-4">
-            <h2 className="text-center mb-4">Login to Your Account</h2>
+            <h2 className="text-center mb-4">
+              {requires2FA
+                ? "Two-Factor Authentication"
+                : "Login to Your Account"}
+            </h2>
 
             {/* Debug info */}
             {Object.keys(errors).length > 0 && (
@@ -99,57 +134,144 @@ const Login = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} noValidate>
-              <div className="mb-3">
-                <label htmlFor="email" className="form-label">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  className={`form-control ${errors.email ? "is-invalid" : ""}`}
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter your email"
-                />
-                {errors.email && (
-                  <div className="invalid-feedback">{errors.email}</div>
-                )}
-              </div>
+            {requires2FA ? (
+              // 2FA Code Entry
+              <form onSubmit={handleSubmit} noValidate>
+                <div className="text-center mb-4">
+                  <div
+                    className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                    style={{ width: "70px", height: "70px" }}
+                  >
+                    <i className="fas fa-envelope fa-2x text-primary"></i>
+                  </div>
+                  <h5>Check Your Email</h5>
+                  <p className="text-muted">
+                    We've sent a verification code to your email address.
+                  </p>
+                </div>
 
-              <div className="mb-3">
-                <label htmlFor="password" className="form-label">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  className={`form-control ${
-                    errors.password ? "is-invalid" : ""
-                  }`}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter your password"
-                />
-                {errors.password && (
-                  <div className="invalid-feedback">{errors.password}</div>
-                )}
-              </div>
+                <div className="mb-3">
+                  <label htmlFor="twoFactorCode" className="form-label">
+                    Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-lg text-center"
+                    id="twoFactorCode"
+                    value={twoFactorCode}
+                    onChange={(e) =>
+                      setTwoFactorCode(
+                        e.target.value.replace(/\D/g, "").slice(0, 6)
+                      )
+                    }
+                    placeholder="000000"
+                    maxLength={6}
+                    autoComplete="one-time-code"
+                    autoFocus
+                    style={{ letterSpacing: "0.5em", fontSize: "1.5rem" }}
+                  />
+                  <div className="form-text">
+                    Enter the 6-digit code sent to your email
+                  </div>
+                </div>
 
-              <div className="d-grid">
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={loading}
-                >
-                  {loading ? "Logging in..." : "Login"}
-                </button>
-              </div>
-            </form>
+                <div className="d-grid gap-2">
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading || twoFactorCode.length < 6}
+                  >
+                    {loading ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                        ></span>
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-lock me-2"></i>
+                        Verify & Login
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={handleBack}
+                  >
+                    <i className="fas fa-arrow-left me-2"></i>
+                    Back to Login
+                  </button>
+                </div>
+              </form>
+            ) : (
+              // Normal Login Form
+              <form onSubmit={handleSubmit} noValidate>
+                <div className="mb-3">
+                  <label htmlFor="email" className="form-label">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    className={`form-control ${
+                      errors.email ? "is-invalid" : ""
+                    }`}
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    placeholder="Enter your email"
+                  />
+                  {errors.email && (
+                    <div className="invalid-feedback">{errors.email}</div>
+                  )}
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="password" className="form-label">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    className={`form-control ${
+                      errors.password ? "is-invalid" : ""
+                    }`}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    placeholder="Enter your password"
+                  />
+                  {errors.password && (
+                    <div className="invalid-feedback">{errors.password}</div>
+                  )}
+                </div>
+
+                <div className="d-grid">
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                        ></span>
+                        Logging in...
+                      </>
+                    ) : (
+                      "Login"
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
 
             <div className="text-center mt-3">
               <p>

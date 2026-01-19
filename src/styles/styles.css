@@ -1444,3 +1444,149 @@ body:not(.dark-theme) footer.bg-dark {
   border: 3px solid #f87171 !important;
   box-shadow: 0 0 30px rgba(248, 113, 113, 0.6) !important;
 }
+
+/* ============================================
+   User Profile Dropdown Styles
+   ============================================ */
+.navbar .nav-item.dropdown {
+  position: relative;
+}
+
+.navbar .nav-item.dropdown .dropdown-toggle {
+  cursor: pointer;
+  color: #555 !important;
+  padding: 0.5rem 0.75rem;
+  text-decoration: none;
+}
+
+.navbar .nav-item.dropdown .dropdown-toggle:hover {
+  color: #333 !important;
+}
+
+/* Dark theme dropdown toggle */
+.dark-theme .navbar .nav-item.dropdown .dropdown-toggle {
+  color: rgba(230, 238, 248, 0.92) !important;
+}
+
+.dark-theme .navbar .nav-item.dropdown .dropdown-toggle:hover {
+  color: #fff !important;
+}
+
+.navbar .nav-item.dropdown .dropdown-toggle::after {
+  margin-left: 0.4em;
+}
+
+.navbar .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: auto;
+  margin-top: 0.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 0.5rem 0;
+  min-width: 220px;
+  z-index: 1050;
+}
+
+.navbar .dropdown-header {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px 12px 0 0;
+  color: #333;
+}
+
+.navbar .dropdown-header .fw-bold {
+  color: #1a1a2e !important;
+}
+
+.navbar .dropdown-header small {
+  color: #6c757d !important;
+}
+
+.navbar .dropdown-item {
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  transition: all 0.15s ease;
+  color: #333 !important;
+}
+
+.navbar .dropdown-item:hover {
+  background-color: #f1f5f9;
+  color: var(--primary-color) !important;
+}
+
+.navbar .dropdown-item i {
+  width: 20px;
+  text-align: center;
+  color: inherit;
+}
+
+.navbar .dropdown-item.text-danger,
+.navbar .dropdown-item[style*="color: rgb(220, 53, 69)"] {
+  color: #dc3545 !important;
+}
+
+.navbar .dropdown-item.text-danger:hover,
+.navbar .dropdown-item[style*="color: rgb(220, 53, 69)"]:hover {
+  background-color: #fef2f2;
+  color: #dc2626 !important;
+}
+
+.navbar .dropdown-divider {
+  margin: 0.25rem 0;
+  border-color: #e5e7eb;
+}
+
+/* Dark theme dropdown */
+.dark-theme .navbar .dropdown-menu {
+  background: #1a2332 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.dark-theme .navbar .dropdown-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+  color: #e2e8f0 !important;
+}
+
+.dark-theme .navbar .dropdown-header .fw-bold {
+  color: #fff !important;
+}
+
+.dark-theme .navbar .dropdown-header small {
+  color: #aaa !important;
+}
+
+.dark-theme .navbar .dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+.dark-theme .navbar .dropdown-item:hover {
+  background-color: #2d3748 !important;
+  color: #60a5fa !important;
+}
+
+.dark-theme .navbar .dropdown-item.text-danger,
+.dark-theme .navbar .dropdown-item[style*="color: rgb(220, 53, 69)"] {
+  color: #f87171 !important;
+}
+
+.dark-theme .navbar .dropdown-item.text-danger:hover,
+.dark-theme .navbar .dropdown-item[style*="color: rgb(220, 53, 69)"]:hover {
+  background-color: rgba(248, 113, 113, 0.1) !important;
+}
+
+.dark-theme .navbar .dropdown-divider {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* User avatar icon styling */
+.navbar .fa-user-circle {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.navbar .dropdown-header .fa-user-circle {
+  color: var(--primary-color);
+}

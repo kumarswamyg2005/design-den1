@@ -14,6 +14,8 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showLogoutAnimation, setShowLogoutAnimation] = useState(false);
+  const [logoutUserName, setLogoutUserName] = useState("");
 
   useEffect(() => {
     checkSession();
@@ -39,6 +41,11 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login(credentials);
       console.log("AuthContext: Login response:", response.data);
 
+      // Check if 2FA is required
+      if (response.data.requires2FA) {
+        return response.data; // Return early, don't set user yet
+      }
+
       if (response.data.user) {
         setUser(response.data.user);
       }
@@ -58,11 +65,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // Store user name before clearing for animation
+    const userName = user?.name || user?.username || "User";
+    setLogoutUserName(userName);
+    setShowLogoutAnimation(true);
+
     try {
       await authAPI.logout();
     } finally {
       setUser(null);
     }
+  };
+
+  const completeLogout = () => {
+    setShowLogoutAnimation(false);
+    setLogoutUserName("");
   };
 
   const updateUser = (userData) => {
@@ -77,6 +94,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     checkSession,
+    showLogoutAnimation,
+    logoutUserName,
+    completeLogout,
     isAuthenticated: !!user,
     isCustomer: user?.role === "customer",
     isDesigner: user?.role === "designer",
