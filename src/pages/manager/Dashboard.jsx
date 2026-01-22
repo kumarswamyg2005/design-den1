@@ -81,7 +81,7 @@ const Dashboard = () => {
     if (activeTab === "pending") {
       // Include both "pending" and "assigned_to_manager" statuses
       filtered = filtered.filter(
-        (o) => o.status === "pending" || o.status === "assigned_to_manager"
+        (o) => o.status === "pending" || o.status === "assigned_to_manager",
       );
     } else if (activeTab === "custom") {
       filtered = filtered.filter((o) => isCustomOrder(o));
@@ -95,7 +95,7 @@ const Dashboard = () => {
           o.status === "ready_for_delivery" ||
           o.status === "picked_up" ||
           o.status === "in_transit" ||
-          o.status === "out_for_delivery"
+          o.status === "out_for_delivery",
       );
     }
 
@@ -107,7 +107,7 @@ const Dashboard = () => {
     // Type filter
     if (filterType !== "all") {
       filtered = filtered.filter((o) =>
-        filterType === "custom" ? isCustomOrder(o) : !isCustomOrder(o)
+        filterType === "custom" ? isCustomOrder(o) : !isCustomOrder(o),
       );
     }
 
@@ -118,7 +118,7 @@ const Dashboard = () => {
         (o) =>
           o._id.toLowerCase().includes(search) ||
           o.userId?.name?.toLowerCase().includes(search) ||
-          o.userId?.email?.toLowerCase().includes(search)
+          o.userId?.email?.toLowerCase().includes(search),
       );
     }
 
@@ -158,7 +158,7 @@ const Dashboard = () => {
     readymadeOrders: orders.filter((o) => !isCustomOrder(o)).length,
     inProduction: orders.filter((o) => o.status === "in_production").length,
     productionCompleted: orders.filter(
-      (o) => o.status === "production_completed"
+      (o) => o.status === "production_completed",
     ).length,
     readyForDelivery: orders.filter((o) => o.status === "ready_for_delivery")
       .length,
@@ -191,14 +191,14 @@ const Dashboard = () => {
           assignOrderToDesigner({
             orderId: selectedOrder._id,
             designerId: selectedPersonId,
-          })
+          }),
         ).unwrap();
       } else if (assignType === "delivery") {
         await dispatch(
           assignOrderToDelivery({
             orderId: selectedOrder._id,
             deliveryPersonId: selectedPersonId,
-          })
+          }),
         ).unwrap();
       }
       closeAssignModal();
@@ -325,6 +325,10 @@ const Dashboard = () => {
                     <Link to="/manager/stock" className="btn btn-success">
                       <i className="fas fa-warehouse me-2"></i>
                       Manage Stock
+                    </Link>
+                    <Link to="/manager/designers" className="btn btn-primary">
+                      <i className="fas fa-money-bill-wave me-2"></i>
+                      Designer Payouts
                     </Link>
                     <button
                       className={`btn btn-outline-secondary ${
@@ -623,7 +627,7 @@ const Dashboard = () => {
                               day: "numeric",
                               hour: "2-digit",
                               minute: "2-digit",
-                            }
+                            },
                           )}
                         </div>
                       </div>
@@ -725,7 +729,7 @@ const Dashboard = () => {
                           </small>
                           <span className="small fw-bold text-info">
                             {new Date(
-                              order.deliverySlot.date
+                              order.deliverySlot.date,
                             ).toLocaleDateString()}{" "}
                             - {order.deliverySlot.timeSlot}
                           </span>

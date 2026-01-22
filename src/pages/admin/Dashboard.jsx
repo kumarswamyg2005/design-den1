@@ -295,7 +295,7 @@ const Dashboard = () => {
                         <h4 className="text-success">
                           {
                             products.filter(
-                              (p) => p.inStock && p.stockQuantity > 10
+                              (p) => p.inStock && p.stockQuantity > 10,
                             ).length
                           }
                         </h4>
@@ -308,7 +308,8 @@ const Dashboard = () => {
                         <h4 className="text-warning">
                           {
                             products.filter(
-                              (p) => p.stockQuantity < 10 && p.stockQuantity > 0
+                              (p) =>
+                                p.stockQuantity < 10 && p.stockQuantity > 0,
                             ).length
                           }
                         </h4>
@@ -321,7 +322,7 @@ const Dashboard = () => {
                         <h4 className="text-danger">
                           {
                             products.filter(
-                              (p) => !p.inStock || p.stockQuantity === 0
+                              (p) => !p.inStock || p.stockQuantity === 0,
                             ).length
                           }
                         </h4>
@@ -334,7 +335,7 @@ const Dashboard = () => {
                       Total Stock:{" "}
                       {products.reduce(
                         (sum, p) => sum + (p.stockQuantity || 0),
-                        0
+                        0,
                       )}{" "}
                       items
                     </h5>
@@ -392,6 +393,19 @@ const Dashboard = () => {
                           style={{ fontSize: "2rem" }}
                         ></i>
                         View Feedbacks
+                      </Link>
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <Link
+                        to="/admin/designers"
+                        className="btn btn-outline-warning btn-lg w-100"
+                        style={{ padding: "1rem" }}
+                      >
+                        <i
+                          className="fas fa-palette d-block mb-2"
+                          style={{ fontSize: "2rem" }}
+                        ></i>
+                        Manage Designers
                       </Link>
                     </div>
                   </div>
@@ -498,12 +512,12 @@ const Dashboard = () => {
                                 user.role === "customer"
                                   ? "bg-primary"
                                   : user.role === "manager"
-                                  ? "bg-success"
-                                  : user.role === "designer"
-                                  ? "bg-warning"
-                                  : user.role === "delivery"
-                                  ? "bg-info"
-                                  : "bg-secondary"
+                                    ? "bg-success"
+                                    : user.role === "designer"
+                                      ? "bg-warning"
+                                      : user.role === "delivery"
+                                        ? "bg-info"
+                                        : "bg-secondary"
                               }`}
                             >
                               {user.role}
@@ -556,7 +570,7 @@ const Dashboard = () => {
                   <h3 className="mb-0 text-warning">
                     {
                       products.filter(
-                        (p) => p.stockQuantity < 10 && p.stockQuantity > 0
+                        (p) => p.stockQuantity < 10 && p.stockQuantity > 0,
                       ).length
                     }
                   </h3>
@@ -570,7 +584,7 @@ const Dashboard = () => {
                   <h3 className="mb-0 text-danger">
                     {
                       products.filter(
-                        (p) => !p.inStock || p.stockQuantity === 0
+                        (p) => !p.inStock || p.stockQuantity === 0,
                       ).length
                     }
                   </h3>
@@ -610,8 +624,8 @@ const Dashboard = () => {
                             !product.inStock || product.stockQuantity === 0
                               ? "table-danger"
                               : product.stockQuantity < 10
-                              ? "table-warning"
-                              : ""
+                                ? "table-warning"
+                                : ""
                           }
                         >
                           <td>

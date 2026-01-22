@@ -48,16 +48,53 @@ const Dashboard = () => {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [showChatPanel, setShowChatPanel] = useState(false);
+
+  // Availability status state
+  const [availabilityStatus, setAvailabilityStatus] = useState(
+    user?.designerProfile?.availabilityStatus || "available",
+  );
+  const [updatingAvailability, setUpdatingAvailability] = useState(false);
   const [chatOrder, setChatOrder] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
 
   // Fetch orders
   useEffect(() => {
     dispatch(fetchDesignerOrders());
   }, [dispatch]);
+
+  // Fetch availability status from server on mount
+  useEffect(() => {
+    const fetchAvailabilityStatus = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/designer/profile`,
+          {
+            credentials: "include",
+          },
+        );
+        if (response.ok) {
+          const data = await response.json();
+          // API returns { success: true, designer: { designerProfile: { availabilityStatus: ... } } }
+          if (
+            data.success &&
+            data.designer?.designerProfile?.availabilityStatus
+          ) {
+            setAvailabilityStatus(
+              data.designer.designerProfile.availabilityStatus,
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching availability status:", error);
+      }
+    };
+    fetchAvailabilityStatus();
+  }, []);
 
   // Scroll chat to bottom
   useEffect(() => {
@@ -71,6 +108,67 @@ const Dashboard = () => {
       setTimeout(() => setRefreshing(false), 500);
     });
   }, [dispatch]);
+
+  // Availability status handler - opens confirmation modal
+  const handleAvailabilityChange = (newStatus) => {
+    if (newStatus === availabilityStatus) return;
+    setPendingStatus(newStatus);
+    setShowStatusModal(true);
+  };
+
+  // Confirm status change
+  const confirmStatusChange = async () => {
+    if (!pendingStatus) return;
+    setUpdatingAvailability(true);
+    setShowStatusModal(false);
+    try {
+      const isAvailable = pendingStatus === "available";
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/designer/availability`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ status: pendingStatus, isAvailable }),
+        },
+      );
+
+      if (response.ok) {
+        setAvailabilityStatus(pendingStatus);
+      } else {
+        console.error("Failed to update availability");
+      }
+    } catch (error) {
+      console.error("Error updating availability:", error);
+    } finally {
+      setUpdatingAvailability(false);
+      setPendingStatus(null);
+    }
+  };
+
+  // Get status label for display
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case "available":
+        return {
+          label: "Open (Available)",
+          icon: "check-circle",
+          color: "success",
+        };
+      case "busy":
+        return { label: "Busy", icon: "clock", color: "warning" };
+      case "not_accepting":
+        return {
+          label: "Closed (Not Accepting Orders)",
+          icon: "ban",
+          color: "danger",
+        };
+      default:
+        return { label: status, icon: "question", color: "secondary" };
+    }
+  };
 
   // Production milestones
   const productionMilestones = [
@@ -148,7 +246,7 @@ const Dashboard = () => {
           note:
             progressNote ||
             (selectedMilestone ? `Milestone: ${selectedMilestone.name}` : ""),
-        })
+        }),
       ).unwrap();
 
       // Send progress update to customer via chat
@@ -159,7 +257,7 @@ const Dashboard = () => {
             message: `📊 Progress Update: ${progressValue}% complete${
               selectedMilestone ? ` - ${selectedMilestone.name}` : ""
             }`,
-          })
+          }),
         );
       }
 
@@ -184,7 +282,7 @@ const Dashboard = () => {
         completeProduction({
           orderId: selectedOrder._id,
           notes: completionNotes,
-        })
+        }),
       ).unwrap();
 
       // Notify customer
@@ -193,7 +291,7 @@ const Dashboard = () => {
           orderId: selectedOrder._id,
           message:
             "🎉 Great news! Your custom design is complete and ready for delivery!",
-        })
+        }),
       );
 
       setShowCompleteModal(false);
@@ -224,7 +322,7 @@ const Dashboard = () => {
         sendOrderMessage({
           orderId: chatOrder._id,
           message: newMessage,
-        })
+        }),
       ).unwrap();
       setNewMessage("");
       await dispatch(fetchOrderMessages(chatOrder._id));
@@ -307,7 +405,38 @@ const Dashboard = () => {
                       beautiful custom designs and keep customers updated.
                     </p>
                   </div>
-                  <div className="d-flex gap-2 align-items-center">
+                  <div className="d-flex gap-2 align-items-center flex-wrap">
+                    {/* Availability Status Toggle */}
+                    <div className="availability-toggle-container">
+                      <div className="availability-status">
+                        <span className="status-label">Shop Status:</span>
+                        <div className="status-toggle-group">
+                          <button
+                            className={`status-toggle-btn ${availabilityStatus === "available" ? "active available" : ""}`}
+                            onClick={() =>
+                              handleAvailabilityChange("available")
+                            }
+                            disabled={updatingAvailability}
+                            title="Available - Ready to accept orders"
+                          >
+                            <i className="fas fa-check-circle"></i>
+                            Open
+                          </button>
+                          <button
+                            className={`status-toggle-btn ${availabilityStatus === "not_accepting" ? "active not-accepting" : ""}`}
+                            onClick={() =>
+                              handleAvailabilityChange("not_accepting")
+                            }
+                            disabled={updatingAvailability}
+                            title="Closed - Not accepting orders"
+                          >
+                            <i className="fas fa-ban"></i>
+                            Closed
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
                     <button
                       className={`btn btn-outline-secondary ${
                         refreshing ? "rotating" : ""
@@ -556,7 +685,7 @@ const Dashboard = () => {
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
-                              }
+                              },
                             )}
                           </small>
                         </div>
@@ -639,7 +768,7 @@ const Dashboard = () => {
                           >
                             <div
                               className={`progress-bar progress-bar-striped progress-bar-animated bg-${getProgressColor(
-                                order.progressPercentage || 0
+                                order.progressPercentage || 0,
                               )}`}
                               style={{
                                 width: `${order.progressPercentage || 0}%`,
@@ -660,10 +789,21 @@ const Dashboard = () => {
                       )}
 
                       {/* Total */}
-                      <div className="order-total d-flex justify-content-between align-items-center p-2 bg-success bg-opacity-10 rounded">
+                      <div className="order-total d-flex justify-content-between align-items-center p-2 bg-success bg-opacity-10 rounded mb-2">
                         <span className="text-muted">Total Amount:</span>
                         <span className="fw-bold text-success fs-5">
                           {formatPrice(order.totalAmount)}
+                        </span>
+                      </div>
+
+                      {/* Expected Earnings */}
+                      <div className="expected-earnings d-flex justify-content-between align-items-center p-2 bg-primary bg-opacity-10 rounded">
+                        <span className="text-muted">
+                          <i className="fas fa-wallet me-1"></i>
+                          Your Earnings (80%):
+                        </span>
+                        <span className="fw-bold text-primary">
+                          {formatPrice(Math.round(order.totalAmount * 0.8))}
                         </span>
                       </div>
                     </div>
@@ -957,7 +1097,7 @@ const Dashboard = () => {
                   <div className="progress mt-2" style={{ height: "20px" }}>
                     <div
                       className={`progress-bar progress-bar-striped progress-bar-animated bg-${getProgressColor(
-                        progressValue
+                        progressValue,
                       )}`}
                       style={{ width: `${progressValue}%` }}
                     >
@@ -1086,6 +1226,111 @@ const Dashboard = () => {
                 >
                   <i className="fas fa-check-double me-2"></i>
                   Complete Production
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Shop Status Change Confirmation Modal */}
+      {showStatusModal && pendingStatus && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg status-change-modal">
+              <div
+                className={`modal-header bg-${getStatusLabel(pendingStatus).color} text-white`}
+              >
+                <h5 className="modal-title">
+                  <i
+                    className={`fas fa-${getStatusLabel(pendingStatus).icon} me-2`}
+                  ></i>
+                  Change Shop Status
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => {
+                    setShowStatusModal(false);
+                    setPendingStatus(null);
+                  }}
+                ></button>
+              </div>
+              <div className="modal-body text-center py-4">
+                <div className="status-change-icon mb-4">
+                  <div
+                    className={`status-icon-circle bg-${getStatusLabel(pendingStatus).color}-soft`}
+                  >
+                    <i
+                      className={`fas fa-${getStatusLabel(pendingStatus).icon} fa-3x text-${getStatusLabel(pendingStatus).color}`}
+                    ></i>
+                  </div>
+                </div>
+                <h5 className="mb-3">Change Status to</h5>
+                <div
+                  className={`status-badge-large bg-${getStatusLabel(pendingStatus).color} text-white mb-4`}
+                >
+                  <i
+                    className={`fas fa-${getStatusLabel(pendingStatus).icon} me-2`}
+                  ></i>
+                  {getStatusLabel(pendingStatus).label}
+                </div>
+                <div className="status-info-box p-3 rounded mb-3">
+                  {pendingStatus === "available" && (
+                    <p className="mb-0 text-muted">
+                      <i className="fas fa-info-circle me-2 text-success"></i>
+                      Your shop will be visible to customers and you can receive
+                      new orders.
+                    </p>
+                  )}
+                  {pendingStatus === "busy" && (
+                    <p className="mb-0 text-muted">
+                      <i className="fas fa-info-circle me-2 text-warning"></i>
+                      Customers can still view your shop, but will see you're
+                      currently busy.
+                    </p>
+                  )}
+                  {pendingStatus === "not_accepting" && (
+                    <p className="mb-0 text-muted">
+                      <i className="fas fa-info-circle me-2 text-danger"></i>
+                      Your shop will be marked as closed. New customers cannot
+                      place orders.
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer justify-content-center border-0 pb-4">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary px-4"
+                  onClick={() => {
+                    setShowStatusModal(false);
+                    setPendingStatus(null);
+                  }}
+                >
+                  <i className="fas fa-times me-2"></i>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-${getStatusLabel(pendingStatus).color} px-4`}
+                  onClick={confirmStatusChange}
+                  disabled={updatingAvailability}
+                >
+                  {updatingAvailability ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin me-2"></i>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-check me-2"></i>
+                      Confirm Change
+                    </>
+                  )}
                 </button>
               </div>
             </div>

@@ -16,6 +16,7 @@ const Login = () => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // 2FA state
   const [requires2FA, setRequires2FA] = useState(false);
@@ -98,6 +99,9 @@ const Login = () => {
       // Check if 2FA is required from error response
       if (err.response?.data?.requires2FA) {
         setRequires2FA(true);
+      } else if (err.response?.data?.pendingApproval) {
+        // Show pending approval message with warning style
+        error(`⏳ ${message}`);
       } else {
         error(message);
       }
@@ -161,7 +165,7 @@ const Login = () => {
                     value={twoFactorCode}
                     onChange={(e) =>
                       setTwoFactorCode(
-                        e.target.value.replace(/\D/g, "").slice(0, 6)
+                        e.target.value.replace(/\D/g, "").slice(0, 6),
                       )
                     }
                     placeholder="000000"
@@ -234,21 +238,34 @@ const Login = () => {
                   <label htmlFor="password" className="form-label">
                     Password
                   </label>
-                  <input
-                    type="password"
-                    className={`form-control ${
-                      errors.password ? "is-invalid" : ""
-                    }`}
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    placeholder="Enter your password"
-                  />
-                  {errors.password && (
-                    <div className="invalid-feedback">{errors.password}</div>
-                  )}
+                  <div className="input-group">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className={`form-control ${
+                        errors.password ? "is-invalid" : ""
+                      }`}
+                      id="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      placeholder="Enter your password"
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                      style={{ borderColor: errors.password ? "#dc3545" : "" }}
+                    >
+                      <i
+                        className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"}`}
+                      ></i>
+                    </button>
+                    {errors.password && (
+                      <div className="invalid-feedback">{errors.password}</div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="d-grid">

@@ -1,126 +1,119 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import "./LogoutAnimation.css";
-
-// Pre-generate static particles to avoid impure function calls during render
-const STATIC_PARTICLES = Array.from({ length: 50 }, (_, i) => ({
-  id: i,
-  x: (i * 7) % 100,
-  y: (i * 13) % 100,
-  size: 5 + (i % 10),
-  color: ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"][
-    i % 6
-  ],
-  delay: (i % 5) * 0.1,
-  duration: 1 + (i % 10) * 0.1,
-}));
 
 const LogoutAnimation = ({ isVisible, onComplete, userName = "User" }) => {
   const [phase, setPhase] = useState(0);
+  const wasVisibleRef = useRef(false);
 
   useEffect(() => {
-    if (isVisible) {
-      // Animation phases
-      const timer1 = setTimeout(() => setPhase(1), 100);
-      const timer2 = setTimeout(() => setPhase(2), 800);
-      const timer3 = setTimeout(() => setPhase(3), 1600);
-      const timer4 = setTimeout(() => {
+    console.log("LogoutAnimation: isVisible =", isVisible);
+
+    if (isVisible && !wasVisibleRef.current) {
+      console.log("LogoutAnimation: Starting animation");
+      wasVisibleRef.current = true;
+      setPhase(0);
+
+      // Smooth animation sequence
+      const timer1 = setTimeout(() => setPhase(1), 50);
+      const timer2 = setTimeout(() => setPhase(2), 400);
+      const timer3 = setTimeout(() => setPhase(3), 800);
+      const timer4 = setTimeout(() => setPhase(4), 1200);
+      const timer5 = setTimeout(() => {
+        console.log("LogoutAnimation: Animation complete, calling onComplete");
         if (onComplete) onComplete();
-      }, 3000);
+      }, 2800);
 
       return () => {
         clearTimeout(timer1);
         clearTimeout(timer2);
         clearTimeout(timer3);
         clearTimeout(timer4);
+        clearTimeout(timer5);
       };
-    }
-    return undefined;
-  }, [isVisible, onComplete]);
-
-  // Reset phase when not visible
-  useEffect(() => {
-    if (!isVisible) {
+    } else if (!isVisible && wasVisibleRef.current) {
+      wasVisibleRef.current = false;
       const resetTimer = setTimeout(() => setPhase(0), 100);
       return () => clearTimeout(resetTimer);
     }
     return undefined;
-  }, [isVisible]);
+  }, [isVisible, onComplete]);
 
   if (!isVisible) return null;
 
   return (
-    <div className={`logout-animation-overlay ${phase >= 1 ? "active" : ""}`}>
-      {/* Animated background particles */}
+    <div className={`logout-overlay ${phase >= 1 ? "active" : ""}`}>
+      {/* Floating particles background */}
       <div className="logout-particles">
-        {STATIC_PARTICLES.map((particle) => (
-          <div
-            key={particle.id}
-            className="logout-particle"
-            style={{
-              left: `${particle.x}%`,
-              top: `${particle.y}%`,
-              width: `${particle.size}px`,
-              height: `${particle.size}px`,
-              backgroundColor: particle.color,
-              animationDelay: `${particle.delay}s`,
-              animationDuration: `${particle.duration}s`,
-            }}
-          />
+        {[...Array(12)].map((_, i) => (
+          <div key={i} className={`particle particle-${i + 1}`} />
         ))}
       </div>
 
-      {/* Main content */}
-      <div className={`logout-content ${phase >= 1 ? "show" : ""}`}>
-        {/* Animated checkmark circle */}
-        <div className={`logout-success-icon ${phase >= 2 ? "animate" : ""}`}>
-          <div className="logout-circle">
-            <svg viewBox="0 0 52 52" className="logout-checkmark-svg">
-              <circle
-                className="logout-checkmark-circle"
-                cx="26"
-                cy="26"
-                r="24"
-                fill="none"
-              />
+      <div className={`logout-card ${phase >= 1 ? "show" : ""}`}>
+        {/* Glowing background effect */}
+        <div className="card-glow" />
+
+        {/* Success Icon */}
+        <div className={`logout-icon-wrapper ${phase >= 2 ? "animate" : ""}`}>
+          <div className="icon-bg" />
+          <div className="icon-ring" />
+          <div className="icon-ring ring-2" />
+
+          <div className={`success-icon ${phase >= 3 ? "show" : ""}`}>
+            <svg viewBox="0 0 24 24" fill="none">
               <path
-                className="logout-checkmark-check"
-                fill="none"
-                d="M14 27l7 7 16-16"
+                d="M5 13l4 4L19 7"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="check-path"
               />
             </svg>
           </div>
-
-          {/* Ripple effects */}
-          <div className="logout-ripple logout-ripple-1"></div>
-          <div className="logout-ripple logout-ripple-2"></div>
-          <div className="logout-ripple logout-ripple-3"></div>
         </div>
 
-        {/* Text content */}
-        <div className={`logout-text ${phase >= 2 ? "show" : ""}`}>
-          <h2 className="logout-title">
-            <span className="logout-wave">👋</span> Goodbye, {userName}!
-          </h2>
-          <p className="logout-message">
-            You have been successfully logged out
+        {/* Message */}
+        <div className={`logout-message ${phase >= 3 ? "show" : ""}`}>
+          <h2>Goodbye!</h2>
+          <p>
+            See you soon, <span className="user-name">{userName}</span>
           </p>
         </div>
 
-        {/* Progress indicator */}
-        <div className={`logout-progress ${phase >= 3 ? "show" : ""}`}>
-          <p className="logout-redirect-text">Redirecting to home page...</p>
-          <div className="logout-progress-bar">
-            <div className="logout-progress-fill"></div>
-          </div>
+        {/* Animated wave divider */}
+        <div className={`wave-divider ${phase >= 4 ? "show" : ""}`}>
+          <svg viewBox="0 0 200 20" preserveAspectRatio="none">
+            <path
+              d="M0,10 C30,5 70,15 100,10 C130,5 170,15 200,10"
+              stroke="url(#waveGradient)"
+              strokeWidth="2"
+              fill="none"
+              className="wave-path"
+            />
+            <defs>
+              <linearGradient
+                id="waveGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="0%"
+              >
+                <stop offset="0%" stopColor="#10b981" />
+                <stop offset="50%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#8b5cf6" />
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
 
-        {/* Floating icons */}
-        <div className={`logout-floating-icons ${phase >= 2 ? "show" : ""}`}>
-          <div className="floating-icon floating-icon-1">👕</div>
-          <div className="floating-icon floating-icon-2">✨</div>
-          <div className="floating-icon floating-icon-3">🎨</div>
-          <div className="floating-icon floating-icon-4">💫</div>
-          <div className="floating-icon floating-icon-5">🛍️</div>
+        {/* Progress indicator */}
+        <div className={`logout-progress ${phase >= 4 ? "animate" : ""}`}>
+          <div className="progress-track">
+            <div className="progress-fill" />
+            <div className="progress-glow" />
+          </div>
+          <span className="progress-text">Signing out...</span>
         </div>
       </div>
     </div>

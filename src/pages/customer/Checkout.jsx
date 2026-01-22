@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import { customerAPI, pincodeAPI } from "../../services/api";
@@ -11,6 +12,7 @@ import {
 import { useFlash } from "../../context/FlashContext";
 import PaymentModal from "../../components/PaymentModal";
 import DesignerSelection from "../../components/DesignerSelection";
+import useExitConfirmation from "../../hooks/useExitConfirmation";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -45,28 +47,113 @@ const Checkout = () => {
   const [selectedDesigner, setSelectedDesigner] = useState(null);
   const [showDesignerSelection, setShowDesignerSelection] = useState(false);
 
+  // Show exit confirmation during checkout (payment in progress)
+  useExitConfirmation(
+    showPaymentModal,
+    "Payment is in progress. Are you sure you want to leave?",
+  );
+
   // Check if cart has custom designs (orders that need a designer)
   const hasCustomDesigns = cart?.items?.some(
-    (item) => item.designId && !item.productId
+    (item) => item.designId && !item.productId,
   );
 
   useEffect(() => {
     if (!cart?.items || cart.items.length === 0) {
       showFlash("Your cart is empty", "error");
       navigate("/customer/cart");
+      return;
     }
     fetchSavedAddresses();
 
-    // Show designer selection if cart has custom designs
-    if (hasCustomDesigns) {
-      setShowDesignerSelection(true);
-    }
+    // Check if cart items already have a designer assigned
+    const checkDesignerInCart = async () => {
+      if (hasCustomDesigns && cart.items) {
+        console.log("=== CHECKING DESIGNER IN CART ===");
+        console.log("Cart items:", cart.items);
+        console.log("Has custom designs:", hasCustomDesigns);
+
+        // Check if any design already has a designer
+        for (const item of cart.items) {
+          if (item.designId) {
+            console.log("Processing cart item:", item);
+            try {
+              // item.designId is already populated as an object from the backend
+              const design =
+                typeof item.designId === "object" ? item.designId : null;
+
+              console.log("Design object:", design);
+              console.log("Designer ID in design:", design?.designerId);
+              console.log("Type of designerId:", typeof design?.designerId);
+
+              if (design?.designerId) {
+                // designerId could be either an object (populated) or just an ID string
+                const designerIdToFetch =
+                  typeof design.designerId === "object"
+                    ? design.designerId._id
+                    : design.designerId;
+
+                console.log("Designer ID to fetch:", designerIdToFetch);
+
+                // Fetch designer info
+                try {
+                  const designerResponse = await axios.get(
+                    `${import.meta.env.VITE_API_URL}/api/marketplace/designers/${designerIdToFetch}`,
+                    { withCredentials: true },
+                  );
+                  console.log("Designer response:", designerResponse.data);
+
+                  if (designerResponse.data.success) {
+                    setSelectedDesigner(designerResponse.data.designer);
+                    setShowDesignerSelection(false);
+                    console.log(
+                      "✅ Designer set successfully, hiding selection",
+                    );
+                    console.log("=================================");
+                    return;
+                  } else {
+                    console.log(
+                      "❌ Designer fetch failed:",
+                      designerResponse.data.message,
+                    );
+                  }
+                } catch (designerError) {
+                  console.error(
+                    "❌ Error fetching designer info:",
+                    designerError,
+                  );
+                  console.error("Designer ID that failed:", designerIdToFetch);
+                  if (designerError.response) {
+                    console.error(
+                      "Error response:",
+                      designerError.response.status,
+                      designerError.response.data,
+                    );
+                  }
+                  // Continue to show designer selection if fetch fails
+                }
+              } else {
+                console.log("❌ No designer ID in design");
+              }
+            } catch (error) {
+              console.error("Error checking designer:", error);
+            }
+          }
+        }
+        // No designer found, show selection
+        console.log("❌ No designer found in any cart item, showing selection");
+        console.log("=================================");
+        setShowDesignerSelection(true);
+      }
+    };
+
+    checkDesignerInCart();
 
     // Auto-enable phone editing if user doesn't have a contact number
     if (!user?.contactNumber) {
       setIsEditingPhone(true);
     }
-  }, [cart]);
+  }, [cart, hasCustomDesigns]);
 
   // Update form when user data changes
   useEffect(() => {
@@ -88,7 +175,7 @@ const Checkout = () => {
 
       // Auto-select default address if exists
       const defaultAddr = response.data.addresses?.find(
-        (addr) => addr.isDefault
+        (addr) => addr.isDefault,
       );
       if (defaultAddr) {
         console.log("Auto-selecting default address:", defaultAddr);
@@ -100,7 +187,7 @@ const Checkout = () => {
         // If no default, select the first address
         console.log(
           "Auto-selecting first address:",
-          response.data.addresses[0]
+          response.data.addresses[0],
         );
         handleSelectAddress(response.data.addresses[0]._id);
       }
@@ -221,14 +308,14 @@ const Checkout = () => {
         console.log("Updating address:", editingAddressId);
         const response = await customerAPI.updateAddress(
           editingAddressId,
-          addressData
+          addressData,
         );
         console.log("Update response:", response);
         showFlash(
           saveAddress
             ? "Address updated and set as default successfully!"
             : "Address updated successfully!",
-          "success"
+          "success",
         );
       } else {
         console.log("Adding new address");
@@ -238,7 +325,7 @@ const Checkout = () => {
           saveAddress
             ? "Address saved and set as default successfully!"
             : "Address saved successfully!",
-          "success"
+          "success",
         );
       }
 
@@ -264,7 +351,7 @@ const Checkout = () => {
       showFlash(
         error.response?.data?.message ||
           "Failed to save address. Please try again.",
-        "error"
+        "error",
       );
     }
   };
@@ -306,7 +393,7 @@ const Checkout = () => {
       } catch (error) {
         showFlash(
           error.response?.data?.message || "Failed to update phone number",
-          "error"
+          "error",
         );
       }
     } else {
@@ -974,7 +1061,7 @@ const Checkout = () => {
                             setEditingAddressId(null);
                             if (savedAddresses.length > 0) {
                               const defaultAddr = savedAddresses.find(
-                                (a) => a.isDefault
+                                (a) => a.isDefault,
                               );
                               if (defaultAddr) {
                                 handleSelectAddress(defaultAddr._id);

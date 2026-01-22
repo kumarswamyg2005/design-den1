@@ -138,6 +138,11 @@ const userSchema = new mongoose.Schema({
     totalRatings: { type: Number, default: 0 },
     completedOrders: { type: Number, default: 0 },
     isAvailable: { type: Boolean, default: true },
+    availabilityStatus: {
+      type: String,
+      enum: ["available", "busy", "not_accepting"],
+      default: "available",
+    },
     priceRange: {
       min: { type: Number, default: 500 },
       max: { type: Number, default: 5000 },
@@ -568,6 +573,7 @@ const Order = mongoose.model("Order", orderSchema);
 // Design Schema (Custom Designs)
 const designSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  designerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   name: String,
   category: String,
   fabric: String,
@@ -630,6 +636,189 @@ reviewSchema.index({ productId: 1, createdAt: -1 });
 reviewSchema.index({ userId: 1 });
 
 const Review = mongoose.model("Review", reviewSchema);
+
+// Designer Portfolio Schema - For designers to showcase their work
+const designerPortfolioSchema = new mongoose.Schema({
+  designerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  name: { type: String, required: true },
+  description: String,
+  category: { type: String, default: "T-Shirt" },
+  style: { type: String, default: "Casual" },
+  basePrice: { type: Number, default: 500 },
+  images: [String], // Array of image URLs
+  graphic: String, // Main graphic image path
+  tags: [String],
+  isActive: { type: Boolean, default: true },
+  inStock: { type: Boolean, default: true },
+  viewCount: { type: Number, default: 0 },
+  orderCount: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+designerPortfolioSchema.index({ designerId: 1, isActive: 1 });
+designerPortfolioSchema.index({ category: 1 });
+designerPortfolioSchema.index({ tags: 1 });
+
+const DesignerPortfolio = mongoose.model(
+  "DesignerPortfolio",
+  designerPortfolioSchema,
+);
+
+// ============================================
+// DESIGNER EARNINGS & PAYOUT SYSTEM
+// ============================================
+
+// Platform Commission Configuration
+const PLATFORM_CONFIG = {
+  defaultDesignerRate: 80, // Designer gets 80%
+  defaultPlatformRate: 20, // Platform gets 20%
+  minimumPayout: 500, // Minimum payout amount in INR
+  payoutHoldDays: 7, // Days to hold earnings before eligible for payout
+  tiers: [
+    { minEarnings: 0, designerRate: 80 },
+    { minEarnings: 10000, designerRate: 82 },
+    { minEarnings: 50000, designerRate: 85 },
+    { minEarnings: 100000, designerRate: 88 },
+  ],
+};
+
+// Designer Earnings Schema
+const designerEarningsSchema = new mongoose.Schema({
+  designerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  orderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Order",
+    required: true,
+  },
+  orderAmount: { type: Number, required: true },
+  commissionRate: { type: Number, required: true },
+  designerEarning: { type: Number, required: true },
+  platformFee: { type: Number, required: true },
+  status: {
+    type: String,
+    enum: ["pending", "available", "processing", "paid"],
+    default: "pending",
+  },
+  availableDate: Date, // Date when earnings become available for payout
+  paidAt: Date,
+  payoutRequestId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "PayoutRequest",
+  },
+  createdAt: { type: Date, default: Date.now },
+});
+
+designerEarningsSchema.index({ designerId: 1, status: 1 });
+designerEarningsSchema.index({ orderId: 1 });
+
+const DesignerEarning = mongoose.model(
+  "DesignerEarning",
+  designerEarningsSchema,
+);
+
+// Payout Request Schema
+const payoutRequestSchema = new mongoose.Schema({
+  designerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  amount: { type: Number, required: true },
+  paymentMethod: {
+    type: String,
+    enum: ["bank_transfer", "upi", "paypal"],
+    required: true,
+  },
+  paymentDetails: {
+    accountNumber: String,
+    ifscCode: String,
+    accountHolderName: String,
+    bankName: String,
+    upiId: String,
+    paypalEmail: String,
+  },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "processing", "completed", "rejected"],
+    default: "pending",
+  },
+  adminNotes: String,
+  processedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Admin who processed
+  processedAt: Date,
+  createdAt: { type: Date, default: Date.now },
+});
+
+payoutRequestSchema.index({ designerId: 1, status: 1 });
+
+const PayoutRequest = mongoose.model("PayoutRequest", payoutRequestSchema);
+
+// Helper function to calculate designer commission rate based on total earnings
+const getDesignerCommissionRate = async (designerId) => {
+  const totalEarnings = await DesignerEarning.aggregate([
+    {
+      $match: {
+        designerId: new mongoose.Types.ObjectId(designerId),
+        status: { $in: ["available", "processing", "paid"] },
+      },
+    },
+    { $group: { _id: null, total: { $sum: "$designerEarning" } } },
+  ]);
+
+  const total = totalEarnings[0]?.total || 0;
+
+  // Find applicable tier
+  let rate = PLATFORM_CONFIG.defaultDesignerRate;
+  for (const tier of PLATFORM_CONFIG.tiers) {
+    if (total >= tier.minEarnings) {
+      rate = tier.designerRate;
+    }
+  }
+  return rate;
+};
+
+// Helper function to create designer earning record
+const createDesignerEarning = async (orderId, designerId, orderAmount) => {
+  try {
+    const commissionRate = await getDesignerCommissionRate(designerId);
+    const designerEarning = Math.round((orderAmount * commissionRate) / 100);
+    const platformFee = orderAmount - designerEarning;
+
+    // Earnings become available after hold period
+    const availableDate = new Date();
+    availableDate.setDate(
+      availableDate.getDate() + PLATFORM_CONFIG.payoutHoldDays,
+    );
+
+    const earning = new DesignerEarning({
+      designerId,
+      orderId,
+      orderAmount,
+      commissionRate,
+      designerEarning,
+      platformFee,
+      status: "pending",
+      availableDate,
+    });
+
+    await earning.save();
+    console.log(
+      `Created earning record: ₹${designerEarning} for designer ${designerId}`,
+    );
+    return earning;
+  } catch (error) {
+    console.error("Error creating designer earning:", error);
+    throw error;
+  }
+};
 
 // Middleware
 app.use(
@@ -758,6 +947,18 @@ app.post("/api/auth/login", async (req, res) => {
       verificationCodes.delete(user.email);
     }
 
+    // Check if designer/manager is approved
+    if (
+      (user.role === "designer" || user.role === "manager") &&
+      !user.approved
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: `Your ${user.role} account is pending approval. Please wait for admin approval.`,
+        pendingApproval: true,
+      });
+    }
+
     req.session.user = {
       id: user._id,
       username: user.username,
@@ -766,6 +967,7 @@ app.post("/api/auth/login", async (req, res) => {
       role: user.role,
       contactNumber: user.contactNumber,
       twoFactorEnabled: user.twoFactorEnabled,
+      approved: user.approved,
     };
 
     req.session.save((err) => {
@@ -789,8 +991,16 @@ app.post("/api/auth/login", async (req, res) => {
 
 app.post("/api/auth/signup", async (req, res) => {
   try {
-    const { username, name, email, password, contactNumber, role, address } =
-      req.body;
+    const {
+      username,
+      name,
+      email,
+      password,
+      contactNumber,
+      role,
+      address,
+      designerProfile: profileData,
+    } = req.body;
 
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
@@ -803,6 +1013,9 @@ app.post("/api/auth/signup", async (req, res) => {
     // Hash the password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Designers require approval, other roles are auto-approved
+    const requiresApproval = role === "designer" || role === "manager";
+
     const user = new User({
       username,
       name: name || username, // Use username as fallback if name not provided
@@ -810,7 +1023,7 @@ app.post("/api/auth/signup", async (req, res) => {
       password: hashedPassword,
       contactNumber,
       role: role || "customer",
-      approved: true,
+      approved: !requiresApproval, // Designers and managers need approval
       addresses: address
         ? [
             {
@@ -824,7 +1037,39 @@ app.post("/api/auth/signup", async (req, res) => {
         : [],
     });
 
+    // Initialize designer profile if role is designer
+    if (role === "designer") {
+      user.designerProfile = {
+        bio: profileData?.bio || "",
+        specializations: profileData?.specializations || [],
+        experience: profileData?.experience || 0,
+        portfolio: profileData?.portfolio || [],
+        rating: 0,
+        totalRatings: 0,
+        completedOrders: 0,
+        isAvailable: true,
+        priceRange: profileData?.priceRange || { min: 500, max: 5000 },
+        turnaroundDays: profileData?.turnaroundDays || 7,
+        badges: ["New Designer"],
+      };
+    }
+
     await user.save();
+
+    // Create notification for admin about new designer/manager signup
+    if (requiresApproval) {
+      const admins = await User.find({ role: "admin" });
+      for (const admin of admins) {
+        const notification = new Notification({
+          userId: admin._id,
+          type: "approval_required",
+          title: `New ${role} signup requires approval`,
+          message: `${name || username} (${email}) has signed up as a ${role} and is awaiting approval.`,
+          read: false,
+        });
+        await notification.save();
+      }
+    }
 
     req.session.user = {
       id: user._id,
@@ -833,12 +1078,16 @@ app.post("/api/auth/signup", async (req, res) => {
       email: user.email,
       role: user.role,
       contactNumber: user.contactNumber,
+      approved: user.approved,
     };
 
     res.json({
       success: true,
-      message: "Account created successfully",
+      message: requiresApproval
+        ? "Account created successfully. Please wait for admin approval before you can access designer features."
+        : "Account created successfully",
       user: req.session.user,
+      requiresApproval,
     });
   } catch (error) {
     console.error("Signup error:", error);
@@ -2606,6 +2855,952 @@ app.put("/api/designer/products/:id/stock", async (req, res) => {
   }
 });
 
+// =====================================================
+// DESIGNER PROFILE & AVAILABILITY ENDPOINTS
+// =====================================================
+
+// Designer - Get own profile
+app.get("/api/designer/profile", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "designer") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const designer = await User.findById(req.session.user.id)
+      .select("-password")
+      .lean();
+    if (!designer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Designer not found" });
+    }
+
+    res.json({ success: true, designer });
+  } catch (error) {
+    console.error("Error fetching designer profile:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Designer - Update availability status
+app.put("/api/designer/availability", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "designer") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { isAvailable, status } = req.body;
+    // status can be: "available", "busy", "not_accepting"
+
+    const updateData = {
+      "designerProfile.isAvailable":
+        isAvailable !== false && status !== "not_accepting",
+      "designerProfile.availabilityStatus":
+        status || (isAvailable ? "available" : "busy"),
+    };
+
+    const designer = await User.findByIdAndUpdate(
+      req.session.user.id,
+      { $set: updateData },
+      { new: true },
+    ).select("-password");
+
+    if (!designer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Designer not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Availability updated successfully",
+      designer: {
+        isAvailable: designer.designerProfile?.isAvailable,
+        availabilityStatus: designer.designerProfile?.availabilityStatus,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating availability:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Designer - Update profile
+app.put("/api/designer/profile", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "designer") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { bio, specializations, experience, priceRange, turnaroundDays } =
+      req.body;
+
+    const updateData = {};
+    if (bio !== undefined) updateData["designerProfile.bio"] = bio;
+    if (specializations !== undefined)
+      updateData["designerProfile.specializations"] = specializations;
+    if (experience !== undefined)
+      updateData["designerProfile.experience"] = experience;
+    if (priceRange !== undefined)
+      updateData["designerProfile.priceRange"] = priceRange;
+    if (turnaroundDays !== undefined)
+      updateData["designerProfile.turnaroundDays"] = turnaroundDays;
+
+    const designer = await User.findByIdAndUpdate(
+      req.session.user.id,
+      { $set: updateData },
+      { new: true },
+    ).select("-password");
+
+    if (!designer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Designer not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      designer,
+    });
+  } catch (error) {
+    console.error("Error updating designer profile:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// =====================================================
+// DESIGNER PORTFOLIO ENDPOINTS
+// =====================================================
+
+// Designer - Get own portfolio items
+app.get("/api/designer/portfolio", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "designer") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const portfolioItems = await DesignerPortfolio.find({
+      designerId: req.session.user.id,
+    }).sort({ createdAt: -1 });
+
+    res.json({ success: true, portfolio: portfolioItems });
+  } catch (error) {
+    console.error("Error fetching portfolio:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Designer - Create portfolio item
+app.post("/designer/products", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "designer") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { name, description, category, style, basePrice, graphic, tags } =
+      req.body;
+
+    if (!name) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Name is required" });
+    }
+
+    const newPortfolioItem = new DesignerPortfolio({
+      designerId: req.session.user.id,
+      name,
+      description: description || "",
+      category: category || "T-Shirt",
+      style: style || "Casual",
+      basePrice: basePrice || 500,
+      graphic: graphic || "",
+      tags: tags || [],
+      isActive: true,
+      inStock: true,
+    });
+
+    await newPortfolioItem.save();
+
+    res.json({
+      success: true,
+      message: "Design created successfully",
+      portfolio: newPortfolioItem,
+    });
+  } catch (error) {
+    console.error("Error creating portfolio item:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Designer - Update portfolio item
+app.put("/api/designer/portfolio/:id", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "designer") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const {
+      name,
+      description,
+      category,
+      style,
+      basePrice,
+      graphic,
+      tags,
+      isActive,
+      inStock,
+    } = req.body;
+
+    const portfolioItem = await DesignerPortfolio.findOne({
+      _id: req.params.id,
+      designerId: req.session.user.id,
+    });
+
+    if (!portfolioItem) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Portfolio item not found" });
+    }
+
+    // Update fields
+    if (name) portfolioItem.name = name;
+    if (description !== undefined) portfolioItem.description = description;
+    if (category) portfolioItem.category = category;
+    if (style) portfolioItem.style = style;
+    if (basePrice) portfolioItem.basePrice = basePrice;
+    if (graphic) portfolioItem.graphic = graphic;
+    if (tags) portfolioItem.tags = tags;
+    if (isActive !== undefined) portfolioItem.isActive = isActive;
+    if (inStock !== undefined) portfolioItem.inStock = inStock;
+    portfolioItem.updatedAt = new Date();
+
+    await portfolioItem.save();
+
+    res.json({
+      success: true,
+      message: "Design updated successfully",
+      portfolio: portfolioItem,
+    });
+  } catch (error) {
+    console.error("Error updating portfolio item:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Designer - Delete portfolio item
+app.delete("/api/designer/portfolio/:id", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "designer") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const result = await DesignerPortfolio.findOneAndDelete({
+      _id: req.params.id,
+      designerId: req.session.user.id,
+    });
+
+    if (!result) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Portfolio item not found" });
+    }
+
+    res.json({ success: true, message: "Design deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting portfolio item:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Public - Get all active designer portfolios (for marketplace browsing)
+app.get("/api/marketplace/designs", async (req, res) => {
+  try {
+    const { category, designer, minPrice, maxPrice, sort } = req.query;
+
+    const filter = { isActive: true, inStock: true };
+
+    if (category) filter.category = category;
+    if (designer) filter.designerId = designer;
+    if (minPrice || maxPrice) {
+      filter.basePrice = {};
+      if (minPrice) filter.basePrice.$gte = Number(minPrice);
+      if (maxPrice) filter.basePrice.$lte = Number(maxPrice);
+    }
+
+    let sortOption = { createdAt: -1 };
+    if (sort === "price_low") sortOption = { basePrice: 1 };
+    if (sort === "price_high") sortOption = { basePrice: -1 };
+    if (sort === "popular") sortOption = { orderCount: -1 };
+
+    const designs = await DesignerPortfolio.find(filter)
+      .populate("designerId", "username fullName")
+      .sort(sortOption)
+      .lean();
+
+    res.json({ success: true, designs });
+  } catch (error) {
+    console.error("Error fetching marketplace designs:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// =====================================================
+// MARKETPLACE DESIGNERS ENDPOINTS
+// =====================================================
+
+// Public - Browse all designers with filters
+app.get("/api/marketplace/designers", async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 12,
+      specialization,
+      minRating,
+      maxPrice,
+      available,
+      sortBy = "rating",
+      search,
+    } = req.query;
+
+    const filter = {
+      role: "designer",
+      approved: true,
+      // Show all designers, including unavailable ones (removed isAvailable filter)
+    };
+
+    // Apply filters
+    if (specialization) {
+      filter["designerProfile.specializations"] = { $in: [specialization] };
+    }
+    if (minRating) {
+      filter["designerProfile.rating"] = { $gte: Number(minRating) };
+    }
+    if (maxPrice) {
+      filter["designerProfile.priceRange.min"] = { $lte: Number(maxPrice) };
+    }
+    if (available === "true") {
+      // Only filter by availability if checkbox is checked
+      filter["designerProfile.isAvailable"] = true;
+    }
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { username: { $regex: search, $options: "i" } },
+        { "designerProfile.bio": { $regex: search, $options: "i" } },
+        {
+          "designerProfile.specializations": { $regex: search, $options: "i" },
+        },
+      ];
+    }
+
+    // Sort options
+    let sortOption = { "designerProfile.rating": -1 };
+    if (sortBy === "orders")
+      sortOption = { "designerProfile.completedOrders": -1 };
+    if (sortBy === "price_low")
+      sortOption = { "designerProfile.priceRange.min": 1 };
+    if (sortBy === "price_high")
+      sortOption = { "designerProfile.priceRange.min": -1 };
+    if (sortBy === "newest") sortOption = { createdAt: -1 };
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const total = await User.countDocuments(filter);
+
+    const designers = await User.find(filter)
+      .select("name username email designerProfile createdAt")
+      .sort(sortOption)
+      .skip(skip)
+      .limit(Number(limit))
+      .lean();
+
+    // Transform designers for frontend
+    const formattedDesigners = designers.map((d) => ({
+      _id: d._id,
+      name: d.name || d.username,
+      username: d.username,
+      email: d.email,
+      bio: d.designerProfile?.bio || "",
+      specializations: d.designerProfile?.specializations || [],
+      experience: d.designerProfile?.experience || 0,
+      portfolio: d.designerProfile?.portfolio || [],
+      rating: d.designerProfile?.rating || 0,
+      totalRatings: d.designerProfile?.totalRatings || 0,
+      completedOrders: d.designerProfile?.completedOrders || 0,
+      isAvailable: d.designerProfile?.isAvailable !== false,
+      priceRange: d.designerProfile?.priceRange || { min: 500, max: 5000 },
+      turnaroundDays: d.designerProfile?.turnaroundDays || 7,
+      badges: d.designerProfile?.badges || [],
+      joinedAt: d.createdAt,
+    }));
+
+    res.json({
+      success: true,
+      designers: formattedDesigners,
+      pagination: {
+        currentPage: Number(page),
+        totalPages: Math.ceil(total / Number(limit)),
+        totalDesigners: total,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching marketplace designers:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Public - Get single designer profile
+app.get("/api/marketplace/designers/:id", async (req, res) => {
+  try {
+    console.log("=== FETCHING DESIGNER PROFILE ===");
+    console.log("Designer ID:", req.params.id);
+
+    const designer = await User.findOne({
+      _id: req.params.id,
+      role: "designer",
+    })
+      .select("name username email designerProfile createdAt approved")
+      .lean();
+
+    console.log("Designer found:", !!designer);
+    if (designer) {
+      console.log("Designer approved status:", designer.approved);
+    }
+
+    if (!designer) {
+      console.log("❌ Designer not found in database");
+      return res
+        .status(404)
+        .json({ success: false, message: "Designer not found" });
+    }
+
+    // Allow fetching designer profile even if not approved (for checkout flow)
+    // The approval check should be for marketplace listing, not for already-selected designers
+
+    // Get designer's portfolio items
+    const portfolioItems = await DesignerPortfolio.find({
+      designerId: designer._id,
+      isActive: true,
+    }).lean();
+
+    // Get recent reviews for this designer
+    const reviews = await Review.find({
+      productId: { $in: portfolioItems.map((p) => p._id) },
+    })
+      .populate("userId", "name username")
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+
+    const formattedDesigner = {
+      _id: designer._id,
+      name: designer.name || designer.username,
+      username: designer.username,
+      email: designer.email,
+      bio: designer.designerProfile?.bio || "",
+      specializations: designer.designerProfile?.specializations || [],
+      experience: designer.designerProfile?.experience || 0,
+      portfolio: designer.designerProfile?.portfolio || [],
+      rating: designer.designerProfile?.rating || 0,
+      totalRatings: designer.designerProfile?.totalRatings || 0,
+      completedOrders: designer.designerProfile?.completedOrders || 0,
+      isAvailable: designer.designerProfile?.isAvailable !== false,
+      priceRange: designer.designerProfile?.priceRange || {
+        min: 500,
+        max: 5000,
+      },
+      turnaroundDays: designer.designerProfile?.turnaroundDays || 7,
+      badges: designer.designerProfile?.badges || [],
+      joinedAt: designer.createdAt,
+      portfolioItems,
+      reviews,
+    };
+
+    console.log("✅ Designer profile fetched successfully");
+    console.log("=================================");
+    res.json({ success: true, designer: formattedDesigner });
+  } catch (error) {
+    console.error("❌ Error fetching designer profile:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// =====================================================
+// DESIGNER EARNINGS & PAYOUT ENDPOINTS
+// =====================================================
+
+// Get platform commission info (public)
+app.get("/api/platform/commission-info", (req, res) => {
+  res.json({
+    success: true,
+    commission: {
+      designerRate: PLATFORM_CONFIG.defaultDesignerRate,
+      platformRate: PLATFORM_CONFIG.defaultPlatformRate,
+      minimumPayout: PLATFORM_CONFIG.minimumPayout,
+      payoutHoldDays: PLATFORM_CONFIG.payoutHoldDays,
+      tiers: PLATFORM_CONFIG.tiers,
+      comparison: {
+        fiverr: { designerRate: 80 },
+        upwork: { designerRate: 80 },
+        "99designs": { designerRate: 75 },
+      },
+      payoutApprovedBy: "Admin", // Clarify who approves payouts
+    },
+  });
+});
+
+// Designer - Get earnings dashboard
+app.get("/api/designer/earnings", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "designer") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const designerId = req.session.user.id;
+
+    // Update pending earnings to available if past hold period
+    await DesignerEarning.updateMany(
+      {
+        designerId,
+        status: "pending",
+        availableDate: { $lte: new Date() },
+      },
+      { $set: { status: "available" } },
+    );
+
+    // Get all earnings
+    const earnings = await DesignerEarning.find({ designerId })
+      .populate("orderId", "orderNumber totalAmount status")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Calculate summary
+    const summary = {
+      totalEarned: 0,
+      pending: 0,
+      availableBalance: 0,
+      processing: 0,
+      paid: 0,
+    };
+
+    for (const earning of earnings) {
+      summary.totalEarned += earning.designerEarning;
+      switch (earning.status) {
+        case "pending":
+          summary.pending += earning.designerEarning;
+          break;
+        case "available":
+          summary.availableBalance += earning.designerEarning;
+          break;
+        case "processing":
+          summary.processing += earning.designerEarning;
+          break;
+        case "paid":
+          summary.paid += earning.designerEarning;
+          break;
+      }
+    }
+
+    res.json({ success: true, earnings, summary });
+  } catch (error) {
+    console.error("Error fetching earnings:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Designer - Get payout requests
+app.get("/api/designer/payout/requests", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "designer") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const requests = await PayoutRequest.find({
+      designerId: req.session.user.id,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error("Error fetching payout requests:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Designer - Request payout
+app.post("/api/designer/payout/request", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "designer") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { amount, paymentMethod, paymentDetails } = req.body;
+    const designerId = req.session.user.id;
+
+    // Validate amount
+    if (!amount || amount < PLATFORM_CONFIG.minimumPayout) {
+      return res.status(400).json({
+        success: false,
+        message: `Minimum payout amount is ₹${PLATFORM_CONFIG.minimumPayout}`,
+      });
+    }
+
+    // Check available balance
+    const availableEarnings = await DesignerEarning.aggregate([
+      {
+        $match: {
+          designerId: new mongoose.Types.ObjectId(designerId),
+          status: "available",
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$designerEarning" } } },
+    ]);
+
+    const availableBalance = availableEarnings[0]?.total || 0;
+
+    if (amount > availableBalance) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient balance. Available: ₹${availableBalance}`,
+      });
+    }
+
+    // Create payout request
+    const payoutRequest = new PayoutRequest({
+      designerId,
+      amount,
+      paymentMethod,
+      paymentDetails,
+      status: "pending",
+    });
+
+    await payoutRequest.save();
+
+    // Mark earnings as processing (FIFO)
+    let remainingAmount = amount;
+    const earningsToUpdate = await DesignerEarning.find({
+      designerId,
+      status: "available",
+    }).sort({ createdAt: 1 });
+
+    for (const earning of earningsToUpdate) {
+      if (remainingAmount <= 0) break;
+
+      if (earning.designerEarning <= remainingAmount) {
+        earning.status = "processing";
+        earning.payoutRequestId = payoutRequest._id;
+        remainingAmount -= earning.designerEarning;
+      } else {
+        // Partial - don't update this one
+        break;
+      }
+      await earning.save();
+    }
+
+    // Create notification for admin
+    const admins = await User.find({ role: "admin" });
+    for (const admin of admins) {
+      await Notification.create({
+        userId: admin._id,
+        type: "payout_request",
+        title: "New Payout Request",
+        message: `Designer ${req.session.user.name || req.session.user.username} requested a payout of ₹${amount}`,
+        relatedId: payoutRequest._id,
+        relatedModel: "PayoutRequest",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Payout request submitted successfully",
+      request: payoutRequest,
+    });
+  } catch (error) {
+    console.error("Error creating payout request:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Admin - Get all payout requests
+app.get("/api/admin/payout/requests", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const requests = await PayoutRequest.find()
+      .populate("designerId", "username name email")
+      .populate("processedBy", "username name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error("Error fetching payout requests:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Admin - Process payout request (approve/reject/complete)
+app.put("/api/admin/payout/:id/process", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { action, adminNotes } = req.body; // action: 'approve', 'reject', 'complete'
+    const payoutRequest = await PayoutRequest.findById(req.params.id);
+
+    if (!payoutRequest) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Payout request not found" });
+    }
+
+    payoutRequest.processedBy = req.session.user.id;
+    payoutRequest.processedAt = new Date();
+    if (adminNotes) payoutRequest.adminNotes = adminNotes;
+
+    if (action === "approve") {
+      payoutRequest.status = "approved";
+    } else if (action === "reject") {
+      payoutRequest.status = "rejected";
+      // Revert earnings to available
+      await DesignerEarning.updateMany(
+        { payoutRequestId: payoutRequest._id },
+        { $set: { status: "available" }, $unset: { payoutRequestId: 1 } },
+      );
+    } else if (action === "complete") {
+      payoutRequest.status = "completed";
+      // Mark earnings as paid
+      await DesignerEarning.updateMany(
+        { payoutRequestId: payoutRequest._id },
+        { $set: { status: "paid", paidAt: new Date() } },
+      );
+    }
+
+    await payoutRequest.save();
+
+    // Notify designer
+    await Notification.create({
+      userId: payoutRequest.designerId,
+      type: "payout_update",
+      title: `Payout ${action === "complete" ? "Completed" : action === "approve" ? "Approved" : "Rejected"}`,
+      message:
+        action === "complete"
+          ? `Your payout of ₹${payoutRequest.amount} has been processed and sent!`
+          : action === "approve"
+            ? `Your payout request of ₹${payoutRequest.amount} has been approved and is being processed.`
+            : `Your payout request of ₹${payoutRequest.amount} was rejected. ${adminNotes || ""}`,
+      relatedId: payoutRequest._id,
+      relatedModel: "PayoutRequest",
+    });
+
+    res.json({
+      success: true,
+      message: `Payout ${action}d successfully`,
+      request: payoutRequest,
+    });
+  } catch (error) {
+    console.error("Error processing payout request:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// =====================================================
+// ADMIN - DESIGNER MANAGEMENT
+// =====================================================
+
+// Admin - Get all designers
+app.get("/api/admin/designers", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const designers = await User.find({ role: "designer" })
+      .select("-password")
+      .lean();
+
+    // Get earnings summary for each designer
+    const designersWithStats = await Promise.all(
+      designers.map(async (designer) => {
+        const earningsSummary = await DesignerEarning.aggregate([
+          { $match: { designerId: designer._id } },
+          {
+            $group: {
+              _id: "$status",
+              total: { $sum: "$designerEarning" },
+            },
+          },
+        ]);
+
+        const earnings = {
+          pending: 0,
+          available: 0,
+          processing: 0,
+          paid: 0,
+          total: 0,
+        };
+
+        earningsSummary.forEach((e) => {
+          earnings[e._id] = e.total;
+          earnings.total += e.total;
+        });
+
+        const orderCount = await Order.countDocuments({
+          designerId: designer._id,
+        });
+
+        return {
+          ...designer,
+          earnings,
+          orderCount,
+        };
+      }),
+    );
+
+    res.json({ success: true, designers: designersWithStats });
+  } catch (error) {
+    console.error("Error fetching designers:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Admin - Get designer profile details
+app.get("/api/admin/designers/:id", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const designer = await User.findOne({
+      _id: req.params.id,
+      role: "designer",
+    })
+      .select("-password")
+      .lean();
+
+    if (!designer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Designer not found" });
+    }
+
+    // Get earnings details
+    const earnings = await DesignerEarning.find({ designerId: designer._id })
+      .populate("orderId", "orderNumber totalAmount status")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Get payout requests
+    const payoutRequests = await PayoutRequest.find({
+      designerId: designer._id,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Get portfolio items
+    const portfolio = await DesignerPortfolio.find({
+      designerId: designer._id,
+    }).lean();
+
+    // Get order history
+    const orders = await Order.find({ designerId: designer._id })
+      .select("orderNumber totalAmount status createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({
+      success: true,
+      designer,
+      earnings,
+      payoutRequests,
+      portfolio,
+      orders,
+    });
+  } catch (error) {
+    console.error("Error fetching designer details:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Admin - Update designer approval status
+app.put("/api/admin/designers/:id/approve", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { approved } = req.body;
+    const designer = await User.findOneAndUpdate(
+      { _id: req.params.id, role: "designer" },
+      { approved: approved },
+      { new: true },
+    ).select("-password");
+
+    if (!designer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Designer not found" });
+    }
+
+    // Notify designer
+    await Notification.create({
+      userId: designer._id,
+      type: "account_update",
+      title: approved ? "Account Approved!" : "Account Status Updated",
+      message: approved
+        ? "Congratulations! Your designer account has been approved. You can now receive orders."
+        : "Your designer account has been put on hold. Please contact support for more information.",
+    });
+
+    res.json({
+      success: true,
+      message: `Designer ${approved ? "approved" : "unapproved"} successfully`,
+      designer,
+    });
+  } catch (error) {
+    console.error("Error updating designer approval:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Admin - Update designer profile
+app.put("/api/admin/designers/:id", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const updates = req.body;
+    delete updates.password; // Don't allow password update through this endpoint
+    delete updates.role; // Don't allow role change
+
+    const designer = await User.findOneAndUpdate(
+      { _id: req.params.id, role: "designer" },
+      updates,
+      { new: true },
+    ).select("-password");
+
+    if (!designer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Designer not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Designer updated successfully",
+      designer,
+    });
+  } catch (error) {
+    console.error("Error updating designer:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 // Get all graphics with stock status for design studio
 app.get("/api/graphics/all", async (req, res) => {
   try {
@@ -2982,6 +4177,29 @@ app.post("/manager/order/:id/deliver", async (req, res) => {
     order.updatedAt = new Date();
     await order.save();
 
+    // Create designer earnings if this order has a designer
+    if (order.designerId) {
+      try {
+        await createDesignerEarning(
+          order._id,
+          order.designerId,
+          order.totalAmount,
+        );
+
+        // Notify designer about earnings
+        await Notification.create({
+          userId: order.designerId,
+          type: "earning",
+          title: "New Earnings!",
+          message: `You earned from order ${order.orderNumber || order._id}. Check your earnings dashboard!`,
+          relatedId: order._id,
+          relatedModel: "Order",
+        });
+      } catch (earningError) {
+        console.error("Error creating designer earning:", earningError);
+      }
+    }
+
     res.json({ success: true, message: "Order marked as delivered", order });
   } catch (error) {
     console.error("Error delivering order:", error);
@@ -3067,6 +4285,304 @@ app.post("/manager/order/:id/assign-delivery", async (req, res) => {
     });
   } catch (error) {
     console.error("Error assigning delivery:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// =====================================================
+// MANAGER - DESIGNER & PAYOUT MANAGEMENT
+// =====================================================
+
+// Manager - Get all designers with details
+app.get("/manager/api/designers", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "manager") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const designers = await User.find({ role: "designer" })
+      .select(
+        "name username email approved designerProfile createdAt contactNumber",
+      )
+      .lean();
+
+    // Get earnings summary for each designer
+    const designersWithEarnings = await Promise.all(
+      designers.map(async (designer) => {
+        const earningsSummary = await DesignerEarning.aggregate([
+          { $match: { designerId: designer._id } },
+          {
+            $group: {
+              _id: "$status",
+              total: { $sum: "$designerEarning" },
+            },
+          },
+        ]);
+
+        const earnings = {
+          pending: 0,
+          available: 0,
+          processing: 0,
+          paid: 0,
+          total: 0,
+        };
+
+        earningsSummary.forEach((e) => {
+          earnings[e._id] = e.total;
+          earnings.total += e.total;
+        });
+
+        // Get order count
+        const orderCount = await Order.countDocuments({
+          designerId: designer._id,
+        });
+
+        return {
+          ...designer,
+          earnings,
+          orderCount,
+          rating: designer.designerProfile?.rating || 0,
+          completedOrders: designer.designerProfile?.completedOrders || 0,
+          isAvailable: designer.designerProfile?.isAvailable !== false,
+        };
+      }),
+    );
+
+    res.json({ success: true, designers: designersWithEarnings });
+  } catch (error) {
+    console.error("Error fetching designers:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Manager - Get designer profile details
+app.get("/manager/api/designers/:id", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "manager") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const designer = await User.findOne({
+      _id: req.params.id,
+      role: "designer",
+    })
+      .select("-password")
+      .lean();
+
+    if (!designer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Designer not found" });
+    }
+
+    // Get earnings details
+    const earnings = await DesignerEarning.find({ designerId: designer._id })
+      .populate("orderId", "orderNumber totalAmount status")
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    // Get payout requests
+    const payoutRequests = await PayoutRequest.find({
+      designerId: designer._id,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Get order history
+    const orders = await Order.find({ designerId: designer._id })
+      .select("orderNumber totalAmount status createdAt")
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    res.json({
+      success: true,
+      designer,
+      earnings,
+      payoutRequests,
+      orders,
+    });
+  } catch (error) {
+    console.error("Error fetching designer details:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Manager - Get all payout requests
+app.get("/manager/api/payout/requests", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "manager") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const requests = await PayoutRequest.find()
+      .populate("designerId", "username name email")
+      .populate("processedBy", "username name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error("Error fetching payout requests:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Manager - Process payout request (approve/reject/complete)
+app.put("/manager/api/payout/:id/process", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "manager") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { action, adminNotes } = req.body;
+    const payoutRequest = await PayoutRequest.findById(req.params.id);
+
+    if (!payoutRequest) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Payout request not found" });
+    }
+
+    payoutRequest.processedBy = req.session.user.id;
+    payoutRequest.processedAt = new Date();
+    if (adminNotes) payoutRequest.adminNotes = adminNotes;
+
+    if (action === "approve") {
+      payoutRequest.status = "approved";
+    } else if (action === "reject") {
+      payoutRequest.status = "rejected";
+      // Revert earnings to available
+      await DesignerEarning.updateMany(
+        { payoutRequestId: payoutRequest._id },
+        { $set: { status: "available" }, $unset: { payoutRequestId: 1 } },
+      );
+    } else if (action === "complete") {
+      payoutRequest.status = "completed";
+      // Mark earnings as paid
+      await DesignerEarning.updateMany(
+        { payoutRequestId: payoutRequest._id },
+        { $set: { status: "paid", paidAt: new Date() } },
+      );
+    }
+
+    await payoutRequest.save();
+
+    // Notify designer
+    await Notification.create({
+      userId: payoutRequest.designerId,
+      type: "payout_update",
+      title: `Payout ${action === "complete" ? "Completed" : action === "approve" ? "Approved" : "Rejected"}`,
+      message:
+        action === "complete"
+          ? `Your payout of ₹${payoutRequest.amount} has been processed and sent!`
+          : action === "approve"
+            ? `Your payout request of ₹${payoutRequest.amount} has been approved and is being processed.`
+            : `Your payout request of ₹${payoutRequest.amount} was rejected. ${adminNotes || ""}`,
+      relatedId: payoutRequest._id,
+      relatedModel: "PayoutRequest",
+    });
+
+    res.json({
+      success: true,
+      message: `Payout ${action}d successfully`,
+      request: payoutRequest,
+    });
+  } catch (error) {
+    console.error("Error processing payout request:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Manager - Create direct payout for designer
+app.post("/manager/api/payout/create", async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== "manager") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { designerId, amount, paymentMethod, paymentDetails, notes } =
+      req.body;
+
+    // Validate designer exists
+    const designer = await User.findOne({ _id: designerId, role: "designer" });
+    if (!designer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Designer not found" });
+    }
+
+    // Check available balance
+    const availableEarnings = await DesignerEarning.aggregate([
+      {
+        $match: {
+          designerId: new mongoose.Types.ObjectId(designerId),
+          status: "available",
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$designerEarning" } } },
+    ]);
+
+    const availableBalance = availableEarnings[0]?.total || 0;
+
+    if (amount > availableBalance) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient balance. Designer has ₹${availableBalance} available`,
+      });
+    }
+
+    // Create payout request and mark as completed immediately
+    const payoutRequest = new PayoutRequest({
+      designerId,
+      amount,
+      paymentMethod: paymentMethod || "bank_transfer",
+      paymentDetails: paymentDetails || {},
+      status: "completed",
+      adminNotes: notes || `Direct payout by manager`,
+      processedBy: req.session.user.id,
+      processedAt: new Date(),
+    });
+
+    await payoutRequest.save();
+
+    // Mark earnings as paid (FIFO)
+    let remainingAmount = amount;
+    const earningsToUpdate = await DesignerEarning.find({
+      designerId,
+      status: "available",
+    }).sort({ createdAt: 1 });
+
+    for (const earning of earningsToUpdate) {
+      if (remainingAmount <= 0) break;
+
+      if (earning.designerEarning <= remainingAmount) {
+        earning.status = "paid";
+        earning.paidAt = new Date();
+        earning.payoutRequestId = payoutRequest._id;
+        remainingAmount -= earning.designerEarning;
+        await earning.save();
+      }
+    }
+
+    // Notify designer
+    await Notification.create({
+      userId: designerId,
+      type: "payout_update",
+      title: "Payout Completed!",
+      message: `You have been paid ₹${amount}. Thank you for your work!`,
+      relatedId: payoutRequest._id,
+      relatedModel: "PayoutRequest",
+    });
+
+    res.json({
+      success: true,
+      message: "Payout completed successfully",
+      request: payoutRequest,
+    });
+  } catch (error) {
+    console.error("Error creating direct payout:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
@@ -3401,6 +4917,20 @@ app.post("/delivery/order/:id/update-status", async (req, res) => {
         type: "info",
       });
     } else if (status === "delivered") {
+      // Create designer earnings if this order has a designer
+      if (order.designerId) {
+        try {
+          const designerIdStr = order.designerId._id || order.designerId;
+          await createDesignerEarning(
+            order._id,
+            designerIdStr,
+            order.totalAmount,
+          );
+        } catch (earningError) {
+          console.error("Error creating designer earning:", earningError);
+        }
+      }
+
       // Notify customer
       await Notification.create({
         userId: order.userId._id,
@@ -3429,11 +4959,14 @@ app.post("/delivery/order/:id/update-status", async (req, res) => {
       // Notify designer if it's a custom order
       if (isCustomOrder && order.designerId) {
         await Notification.create({
-          userId: order.designerId._id,
+          userId: order.designerId._id || order.designerId,
           orderId: order._id,
           message: `🎉 Your custom design for Order #${order._id
             .toString()
-            .substring(0, 8)} was successfully delivered!`,
+            .substring(
+              0,
+              8,
+            )} was successfully delivered! Check your earnings dashboard.`,
           type: "success",
         });
       }
@@ -3624,12 +5157,49 @@ app.post("/customer/save-design", async (req, res) => {
       return res.status(403).json({ success: false, message: "Unauthorized" });
     }
 
+    console.log("=== SAVE DESIGN REQUEST ===");
+    console.log("Request body:", req.body);
+    console.log("Designer ID from request:", req.body.designerId);
+
+    // Filter out non-schema fields
+    const {
+      name,
+      category,
+      fabric,
+      color,
+      pattern,
+      size,
+      graphic,
+      customText,
+      estimatedPrice,
+      basePrice,
+      sustainabilityScore,
+      designerId,
+      gender,
+      customImage,
+    } = req.body;
+
     const design = new Design({
       userId: req.session.user.id,
-      ...req.body,
+      name,
+      category,
+      fabric,
+      color,
+      pattern,
+      size,
+      graphic,
+      customText,
+      estimatedPrice: estimatedPrice || basePrice || 500,
+      basePrice: basePrice || 500,
+      sustainabilityScore,
+      designerId: designerId || null, // Explicitly set designerId
     });
 
     await design.save();
+    console.log("Design saved with ID:", design._id);
+    console.log("Design saved with designerId:", design.designerId);
+    console.log("===========================");
+
     res.json({ success: true, message: "Design saved successfully", design });
   } catch (error) {
     console.error("Error saving design:", error);
@@ -3761,7 +5331,13 @@ app.get("/api/customer/cart", async (req, res) => {
     }
     let cart = await Cart.findOne({ userId: req.session.user.id })
       .populate("items.productId")
-      .populate("items.designId");
+      .populate({
+        path: "items.designId",
+        populate: {
+          path: "designerId",
+          select: "username email",
+        },
+      });
 
     console.log("=== BACKEND CART DEBUG ===");
     console.log("User ID:", req.session.user.id);
@@ -3772,6 +5348,11 @@ app.get("/api/customer/cart", async (req, res) => {
         console.log(`Item ${index}:`, {
           _id: item._id,
           productId: item.productId?._id || "NOT POPULATED",
+          designId: item.designId?._id || "NOT POPULATED",
+          designerId:
+            item.designId?.designerId?._id ||
+            item.designId?.designerId ||
+            "NO DESIGNER",
           quantity: item.quantity,
           size: item.size,
           color: item.color,
@@ -4356,10 +5937,27 @@ app.post("/customer/api/process-checkout", async (req, res) => {
       (item) => item.designId && !item.productId,
     );
 
-    if (isCustomOrder && selectedDesignerId) {
+    // Determine the designer to assign
+    let designerToAssign = selectedDesignerId;
+
+    // If no designer was explicitly selected during checkout, check if design has a pre-assigned designer
+    if (isCustomOrder && !designerToAssign) {
+      for (const item of cart.items) {
+        if (item.designId && item.designId.designerId) {
+          designerToAssign =
+            typeof item.designId.designerId === "object"
+              ? item.designId.designerId._id
+              : item.designId.designerId;
+          console.log("Using designer from design:", designerToAssign);
+          break; // Use the first designer found
+        }
+      }
+    }
+
+    if (isCustomOrder && designerToAssign) {
       // Customer selected a designer - directly assign to designer (skip manager)
       const selectedDesigner = await User.findOne({
-        _id: selectedDesignerId,
+        _id: designerToAssign,
         role: "designer",
         approved: true,
       });
@@ -5751,6 +7349,29 @@ app.post("/delivery/api/order/:id/deliver", async (req, res) => {
     });
 
     await order.save();
+
+    // Create designer earnings if this order has a designer
+    if (order.designerId) {
+      try {
+        await createDesignerEarning(
+          order._id,
+          order.designerId,
+          order.totalAmount,
+        );
+
+        // Notify designer about earnings
+        await Notification.create({
+          userId: order.designerId,
+          type: "earning",
+          title: "New Earnings!",
+          message: `You earned from order ${order.orderNumber || order._id}. Check your earnings dashboard!`,
+          relatedId: order._id,
+          relatedModel: "Order",
+        });
+      } catch (earningError) {
+        console.error("Error creating designer earning:", earningError);
+      }
+    }
 
     // Notifications
     await Notification.create({

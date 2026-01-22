@@ -8,7 +8,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Toast from "./components/Toast";
 import LoadingSpinner from "./components/LoadingSpinner";
 import LogoutAnimation from "./components/LogoutAnimation";
-import useExitConfirmation from "./hooks/useExitConfirmation";
 import "./styles/cartAnimation.css";
 
 // Public Pages
@@ -16,6 +15,10 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
+
+// Marketplace Pages
+import DesignerMarketplace from "./pages/marketplace/DesignerMarketplace";
+import DesignerProfile from "./pages/marketplace/DesignerProfile";
 
 // Shop Pages
 import ShopIndex from "./pages/shop/ShopIndex";
@@ -38,12 +41,14 @@ import HelpSupport from "./pages/customer/HelpSupport";
 import DesignerDashboard from "./pages/designer/Dashboard";
 import DesignerProducts from "./pages/designer/Products";
 import DesignerOrderDetails from "./pages/designer/OrderDetails";
+import DesignerEarnings from "./pages/designer/Earnings";
 
 // Manager Pages
 import ManagerDashboard from "./pages/manager/Dashboard";
 import ManagerPending from "./pages/manager/Pending";
 import ManagerOrderDetails from "./pages/manager/OrderDetails";
 import ManagerStockManagement from "./pages/manager/StockManagement";
+import ManagerDesignerPayouts from "./pages/manager/DesignerPayouts";
 
 // Delivery Pages
 import DeliveryDashboard from "./pages/delivery/Dashboard";
@@ -56,20 +61,13 @@ import AdminPendingManagers from "./pages/admin/PendingManagers";
 import AdminFeedbacks from "./pages/admin/Feedbacks";
 import AdminOrderDetails from "./pages/admin/OrderDetails";
 import AdminAnalytics from "./pages/admin/Analytics";
+import AdminDesigners from "./pages/admin/Designers";
 
 import "./styles/styles.css";
 
-// Component to handle exit confirmation and logout animation
+// Component to handle logout animation
 const AppWrapper = ({ children }) => {
-  const {
-    showLogoutAnimation,
-    logoutUserName,
-    completeLogout,
-    isAuthenticated,
-  } = useAuth();
-
-  // Show exit confirmation when user is authenticated
-  useExitConfirmation(isAuthenticated);
+  const { showLogoutAnimation, logoutUserName, completeLogout } = useAuth();
 
   const handleLogoutComplete = () => {
     completeLogout();
@@ -102,6 +100,30 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
+
+                    {/* Marketplace Routes - Blocked for Designers only */}
+                    <Route
+                      path="/marketplace"
+                      element={
+                        <ProtectedRoute
+                          blockedRoles={["designer"]}
+                          redirectTo="/designer"
+                        >
+                          <DesignerMarketplace />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/marketplace/designer/:designerId"
+                      element={
+                        <ProtectedRoute
+                          blockedRoles={["designer"]}
+                          redirectTo="/designer"
+                        >
+                          <DesignerProfile />
+                        </ProtectedRoute>
+                      }
+                    />
 
                     {/* Security Settings - Available to all authenticated users */}
                     <Route
@@ -242,6 +264,14 @@ function App() {
                       }
                     />
                     <Route
+                      path="/designer/earnings"
+                      element={
+                        <ProtectedRoute allowedRoles={["designer"]}>
+                          <DesignerEarnings />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
                       path="/designer/orders/:id"
                       element={
                         <ProtectedRoute allowedRoles={["designer"]}>
@@ -296,6 +326,22 @@ function App() {
                       element={
                         <ProtectedRoute allowedRoles={["manager"]}>
                           <ManagerStockManagement />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/manager/designers"
+                      element={
+                        <ProtectedRoute allowedRoles={["manager"]}>
+                          <ManagerDesignerPayouts />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/manager/payouts"
+                      element={
+                        <ProtectedRoute allowedRoles={["manager"]}>
+                          <ManagerDesignerPayouts />
                         </ProtectedRoute>
                       }
                     />
@@ -372,6 +418,14 @@ function App() {
                       element={
                         <ProtectedRoute allowedRoles={["admin"]}>
                           <AdminAnalytics />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/designers"
+                      element={
+                        <ProtectedRoute allowedRoles={["admin"]}>
+                          <AdminDesigners />
                         </ProtectedRoute>
                       }
                     />

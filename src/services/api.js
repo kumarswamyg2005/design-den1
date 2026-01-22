@@ -72,6 +72,7 @@ export const customerAPI = {
   saveDesign: (data) => api.post("/customer/save-design", data),
   createDesign: (data) => api.post("/customer/design-studio", data),
   getDesigns: () => api.get("/customer/designs"),
+  getDesign: (id) => api.get(`/customer/designs/${id}`),
   addToWishlist: (data) => api.post("/customer/wishlist/add", data),
   getWishlist: () => api.get("/customer/wishlist/list"),
   removeFromWishlist: (id) => api.delete(`/customer/wishlist/remove/${id}`),
@@ -104,10 +105,16 @@ export const designerAPI = {
       progressPercentage: progress,
     }),
   completeOrder: (id) => api.post(`/designer/orders/${id}/complete`),
+  // Legacy products endpoints (static graphics)
   getProducts: () => api.get("/api/designer/products"),
-  createProduct: (data) => api.post("/designer/products", data),
   updateProductStock: (id, inStock) =>
     api.put(`/api/designer/products/${id}/stock`, { inStock }),
+  // Portfolio endpoints (designer's own designs)
+  getPortfolio: () => api.get("/api/designer/portfolio"),
+  createProduct: (data) => api.post("/designer/products", data),
+  updatePortfolioItem: (id, data) =>
+    api.put(`/api/designer/portfolio/${id}`, data),
+  deletePortfolioItem: (id) => api.delete(`/api/designer/portfolio/${id}`),
 };
 
 // Manager API
@@ -132,6 +139,13 @@ export const managerAPI = {
   createProduct: (data) => api.post("/manager/api/product", data),
   updateStock: (id, data) => api.put(`/manager/api/product/${id}/stock`, data),
   deleteProduct: (id) => api.delete(`/manager/api/product/${id}`),
+  // Designer & Payout Management
+  getDesignersWithDetails: () => api.get("/manager/api/designers"),
+  getDesignerProfile: (id) => api.get(`/manager/api/designers/${id}`),
+  getPayoutRequests: () => api.get("/manager/api/payout/requests"),
+  processPayoutRequest: (id, action, notes) =>
+    api.put(`/manager/api/payout/${id}/process`, { action, adminNotes: notes }),
+  createDirectPayout: (data) => api.post("/manager/api/payout/create", data),
 };
 
 // Admin API
@@ -151,6 +165,16 @@ export const adminAPI = {
   approveManager: (id) => api.post(`/admin/approve-manager/${id}`),
   rejectManager: (id) => api.post(`/admin/reject-manager/${id}`),
   getFeedbacks: () => api.get("/admin/feedbacks"),
+  // Designer Management
+  getDesigners: () => api.get("/api/admin/designers"),
+  getDesignerProfile: (id) => api.get(`/api/admin/designers/${id}`),
+  updateDesigner: (id, data) => api.put(`/api/admin/designers/${id}`, data),
+  approveDesigner: (id, approved) =>
+    api.put(`/api/admin/designers/${id}/approve`, { approved }),
+  // Payout Management
+  getPayoutRequests: () => api.get("/api/admin/payout/requests"),
+  processPayoutRequest: (id, action, notes) =>
+    api.put(`/api/admin/payout/${id}/process`, { action, adminNotes: notes }),
 };
 
 // Shop API

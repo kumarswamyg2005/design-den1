@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useFlash } from "../../context/FlashContext";
 import { useCartAnimation } from "../../hooks/useCartAnimation";
 import ModelViewer from "../../components/ModelViewer";
+import useExitConfirmation from "../../hooks/useExitConfirmation";
 import axios from "axios";
 
 const API_BASE_URL =
@@ -28,6 +29,7 @@ const DesignStudio = () => {
     customText: "",
     customImage: "",
     graphic: "None",
+    designerId: null,
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -43,6 +45,13 @@ const DesignStudio = () => {
   const [estimatedPrice, setEstimatedPrice] = useState(1200);
   const [shakeError, setShakeError] = useState(false);
   const [graphics, setGraphics] = useState([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Show exit confirmation only when user has made design changes
+  useExitConfirmation(
+    hasUnsavedChanges,
+    "You have unsaved design changes. Are you sure you want to leave?",
+  );
 
   // Fabric sustainability scores (matching EJS)
   const fabricScores = {
@@ -99,6 +108,17 @@ const DesignStudio = () => {
     fetchGraphics();
   }, []);
 
+  // Set designer ID from URL if present
+  useEffect(() => {
+    const designerId = searchParams.get("designerId");
+    if (designerId) {
+      console.log("=== DESIGNER ID FROM URL ===");
+      console.log("Designer ID:", designerId);
+      console.log("===========================");
+      setFormData((prev) => ({ ...prev, designerId }));
+    }
+  }, [searchParams]);
+
   // Load design from URL if designId is present
   useEffect(() => {
     const loadDesign = async () => {
@@ -111,7 +131,7 @@ const DesignStudio = () => {
           );
           if (response.data.success && response.data.design) {
             const design = response.data.design;
-            setFormData({
+            setFormData((prev) => ({
               name: design.name || "",
               category: design.category || "T-Shirt",
               gender: design.gender || "Men",
@@ -122,7 +142,8 @@ const DesignStudio = () => {
               customText: design.customText || "",
               customImage: design.customImage || "",
               graphic: design.graphic || "None",
-            });
+              designerId: design.designerId || prev.designerId || null,
+            }));
             showFlash("Design loaded successfully", "success");
           }
         } catch (error) {
@@ -137,6 +158,7 @@ const DesignStudio = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setHasUnsavedChanges(true); // Mark as having unsaved changes
   };
 
   const handleReset = () => {
@@ -146,6 +168,7 @@ const DesignStudio = () => {
       color: "#ffffff",
       graphic: "None",
     }));
+    setHasUnsavedChanges(false); // Reset unsaved changes flag
   };
 
   const validateDesign = () => {
@@ -211,6 +234,11 @@ const DesignStudio = () => {
         formAction: action,
       };
 
+      console.log("=== SAVING DESIGN ===");
+      console.log("Full design data:", designData);
+      console.log("Designer ID being saved:", designData.designerId);
+      console.log("====================");
+
       if (action === "save") {
         // Save design and place order
         const saveResponse = await customerAPI.saveDesign(designData);
@@ -222,9 +250,11 @@ const DesignStudio = () => {
             size: formData.size,
             color: formData.color,
           });
+          setHasUnsavedChanges(false); // Clear unsaved changes
           showFlash("Design saved and added to cart!", "success");
           navigate("/customer/cart");
         } else {
+          setHasUnsavedChanges(false); // Clear unsaved changes
           showFlash("Design saved successfully!", "success");
           navigate("/customer/dashboard");
         }
@@ -247,6 +277,7 @@ const DesignStudio = () => {
             }
           }
 
+          setHasUnsavedChanges(false); // Clear unsaved changes
           showFlash("Design added to cart!", "success");
         }
       } else if (action === "wishlist") {
@@ -256,6 +287,7 @@ const DesignStudio = () => {
           await customerAPI.addToWishlist({
             designId: saveResponse.data.design._id,
           });
+          setHasUnsavedChanges(false); // Clear unsaved changes
           showFlash("Design added to wishlist!", "success");
           navigate("/customer/dashboard");
         }

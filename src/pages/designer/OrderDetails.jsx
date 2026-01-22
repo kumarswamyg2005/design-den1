@@ -334,6 +334,25 @@ const OrderDetails = () => {
                 <strong>{formatPrice(order.totalAmount || 0)}</strong>
               </div>
               <hr />
+
+              {/* Expected Earnings Card */}
+              <div className="bg-success bg-opacity-10 rounded p-3 mb-3">
+                <h6 className="text-success mb-2">
+                  <i className="fas fa-wallet me-2"></i>
+                  Your Expected Earnings
+                </h6>
+                <div className="d-flex justify-content-between align-items-center">
+                  <span>Commission (80%):</span>
+                  <strong className="text-success fs-5">
+                    {formatPrice(Math.round((order.totalAmount || 0) * 0.8))}
+                  </strong>
+                </div>
+                <small className="text-muted d-block mt-2">
+                  <i className="fas fa-info-circle me-1"></i>
+                  Earnings are credited 7 days after delivery
+                </small>
+              </div>
+
               <p className="mb-0 text-muted small">
                 Ordered: {new Date(order.orderDate).toLocaleDateString()}
               </p>

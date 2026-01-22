@@ -32,6 +32,81 @@
   font-size: 1.25rem;
 }
 
+/* Availability Toggle Styles */
+.availability-toggle-container {
+  position: relative;
+}
+
+.availability-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.availability-status .status-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.status-toggle-group {
+  display: flex;
+  gap: 0.25rem;
+  background: #f3f4f6;
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.status-toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #6b7280;
+}
+
+.status-toggle-btn:hover:not(.active):not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #374151;
+}
+
+.status-toggle-btn.active {
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.status-toggle-btn.active.available {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.status-toggle-btn.active.busy {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.status-toggle-btn.active.not-accepting {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.status-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-toggle-btn i {
+  font-size: 0.75rem;
+}
+
 /* Stat Cards */
 .stat-card {
   transition: all 0.3s ease;
@@ -635,4 +710,112 @@
   .milestone-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* =====================================================
+   SHOP STATUS CHANGE MODAL STYLES
+   ===================================================== */
+
+.status-change-modal {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.status-change-modal .modal-header {
+  border-bottom: none;
+  padding: 1.25rem 1.5rem;
+}
+
+.status-change-modal .modal-body {
+  padding: 2rem 1.5rem;
+}
+
+.status-icon-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.bg-success-soft {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.bg-warning-soft {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.bg-danger-soft {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.status-badge-large {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.status-info-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.status-info-box p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.status-change-modal .modal-footer {
+  gap: 0.75rem;
+}
+
+.status-change-modal .modal-footer .btn {
+  min-width: 140px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.status-change-modal .modal-footer .btn-outline-secondary {
+  border-width: 2px;
+}
+
+.status-change-modal .modal-footer .btn-outline-secondary:hover {
+  background: #f3f4f6;
+}
+
+/* Animation for the status icon */
+.status-change-icon {
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Hover effects for status toggle buttons */
+.status-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-toggle-btn i {
+  font-size: 0.85rem;
+}
+
+/* Smooth transition for buttons */
+.status-toggle-btn,
+.status-change-modal .btn {
+  transition: all 0.2s ease;
 }

@@ -76,6 +76,15 @@ const Header = () => {
                 Home
               </Link>
             </li>
+            {/* Hide Browse Designers from designers - they shouldn't see other designers */}
+            {!isDesigner && (
+              <li className="nav-item">
+                <Link className="nav-link" to="/marketplace">
+                  <i className="fas fa-users me-1"></i>
+                  Browse Designers
+                </Link>
+              </li>
+            )}
             <li className="nav-item">
               <Link className="nav-link" to="/shop">
                 Shop
@@ -120,11 +129,19 @@ const Header = () => {
                 )}
 
                 {isDesigner && (
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/designer/dashboard">
-                      Dashboard
-                    </Link>
-                  </li>
+                  <>
+                    <li className="nav-item">
+                      <Link className="nav-link" to="/designer/dashboard">
+                        Dashboard
+                      </Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link className="nav-link" to="/designer/earnings">
+                        <i className="fas fa-wallet me-1"></i>
+                        Earnings
+                      </Link>
+                    </li>
+                  </>
                 )}
 
                 {isManager && (

@@ -67,17 +67,24 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     // Store user name before clearing for animation
     const userName = user?.name || user?.username || "User";
+    console.log("Logout started, showing animation for:", userName);
     setLogoutUserName(userName);
     setShowLogoutAnimation(true);
 
+    // Don't clear user immediately - let animation play first
+    // User will be cleared when completeLogout is called
     try {
       await authAPI.logout();
-    } finally {
-      setUser(null);
+      console.log("Logout API call completed");
+    } catch (error) {
+      console.error("Logout API error:", error);
     }
+    // Note: Don't setUser(null) here - it will be done after animation
   };
 
   const completeLogout = () => {
+    console.log("Animation complete, clearing user");
+    setUser(null);
     setShowLogoutAnimation(false);
     setLogoutUserName("");
   };
@@ -104,6 +111,40 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.role === "admin",
     isDelivery: user?.role === "delivery",
   };
+
+  // Don't render children until auth check is complete to prevent flash
+  if (loading) {
+    return (
+      <AuthContext.Provider value={value}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          }}
+        >
+          <div style={{ textAlign: "center", color: "white" }}>
+            <div
+              style={{
+                width: "50px",
+                height: "50px",
+                border: "4px solid rgba(255,255,255,0.3)",
+                borderTop: "4px solid white",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+                margin: "0 auto 1rem",
+              }}
+            />
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <h2 style={{ margin: 0, fontWeight: 600 }}>DesignDen</h2>
+            <p style={{ opacity: 0.8, marginTop: "0.5rem" }}>Loading...</p>
+          </div>
+        </div>
+      </AuthContext.Provider>
+    );
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

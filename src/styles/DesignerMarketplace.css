@@ -1,0 +1,385 @@
+/* Designer Marketplace Styles */
+
+.designer-marketplace {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+/* Designer Profile Page */
+.designer-profile {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.marketplace-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 80px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.marketplace-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  opacity: 0.3;
+}
+
+.marketplace-hero .container {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-search {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.hero-search .input-group {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  border-radius: 50px;
+  overflow: hidden;
+}
+
+.hero-search .input-group-text {
+  padding-left: 25px;
+  border-radius: 50px 0 0 50px;
+}
+
+.hero-search .form-control {
+  padding: 15px 25px 15px 10px;
+  border-radius: 0 50px 50px 0;
+}
+
+.hero-search .form-control:focus {
+  box-shadow: none;
+}
+
+/* Designer Cards */
+.designer-card {
+  transition: all 0.3s ease;
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.designer-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Unavailable Designer Styles */
+.designer-card.designer-unavailable {
+  opacity: 0.75;
+}
+
+.designer-card.designer-unavailable .card-body {
+  filter: grayscale(30%);
+}
+
+.designer-card.designer-unavailable:hover {
+  transform: translateY(-3px);
+  opacity: 0.9;
+}
+
+.unavailable-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  padding: 8px 0;
+  text-align: center;
+}
+
+.unavailable-badge {
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.designer-card.designer-unavailable .card-body {
+  padding-top: 50px;
+}
+
+.designer-avatar {
+  position: relative;
+  display: inline-block;
+}
+
+.designer-avatar::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 15px;
+  height: 15px;
+  background-color: #28a745;
+  border: 3px solid white;
+  border-radius: 50%;
+}
+
+.rating {
+  font-size: 14px;
+}
+
+.rating .text-warning {
+  letter-spacing: 2px;
+}
+
+.badges .badge {
+  font-size: 10px;
+  padding: 4px 8px;
+  font-weight: 500;
+}
+
+.designer-stats {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid #e9ecef;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.stat-item {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-item i {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.price-range {
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.specializations .badge {
+  font-size: 11px;
+  padding: 5px 10px;
+  font-weight: 500;
+  border: 1px solid #dee2e6;
+}
+
+.availability {
+  text-align: center;
+}
+
+/* Filter Sidebar */
+.card.sticky-top {
+  border-radius: 12px;
+}
+
+.form-label.fw-bold {
+  font-size: 14px;
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.form-select,
+.form-control {
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  padding: 10px 15px;
+}
+
+.form-select:focus,
+.form-control:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-check-input:checked {
+  background-color: #667eea;
+  border-color: #667eea;
+}
+
+/* Pagination */
+.pagination {
+  gap: 5px;
+}
+
+.page-item .page-link {
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  color: #667eea;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.page-item .page-link:hover {
+  background-color: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.page-item.active .page-link {
+  background-color: #667eea;
+  border-color: #667eea;
+}
+
+.page-item.disabled .page-link {
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .marketplace-hero {
+    padding: 50px 0;
+  }
+
+  .marketplace-hero h1 {
+    font-size: 2rem;
+  }
+
+  .designer-stats {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .stat-item {
+    text-align: left;
+  }
+
+  .stat-item i {
+    display: inline;
+    margin-bottom: 0;
+  }
+}
+
+/* Loading State */
+.designer-card.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Designer Profile Page */
+.designer-profile-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 60px 0;
+  color: white;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  background-color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.profile-avatar i {
+  font-size: 60px;
+  color: #667eea;
+}
+
+.portfolio-item {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.portfolio-item:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.portfolio-item img {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+}
+
+.review-card {
+  border-left: 4px solid #667eea;
+  background-color: #f8f9fa;
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+}
+
+.review-rating {
+  color: #ffc107;
+  font-size: 18px;
+  letter-spacing: 2px;
+}
+
+/* Designer Earnings Dashboard */
+.earnings-card {
+  border-radius: 12px;
+  padding: 25px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  margin-bottom: 20px;
+}
+
+.earnings-card h3 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.earnings-card p {
+  opacity: 0.9;
+  margin-bottom: 0;
+}
+
+.earnings-table {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.status-badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-processing {
+  background-color: #cfe2ff;
+  color: #084298;
+}
+
+.status-paid {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.status-on_hold {
+  background-color: #f8d7da;
+  color: #842029;
+}
