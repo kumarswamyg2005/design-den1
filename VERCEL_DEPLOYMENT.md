@@ -27,6 +27,16 @@ VITE_API_URL=https://backend-gw9o.onrender.com
 - The `.env.production` file is included in the repository and will be used automatically during build
 - If you need to change the backend URL, update it in Vercel's environment variables
 - Make sure your backend (Render) is running and accessible
+- **CRITICAL**: Update the `allowedOrigins` array in `server.cjs` with your actual Vercel URL (e.g., `https://design-den1.vercel.app`)
+
+## Backend CORS Configuration
+
+Your backend needs to allow your Vercel domain. The `server.cjs` file has been configured to allow:
+
+- `https://design-den1.vercel.app` (production)
+- Preview deployments: `https://design-den1-*.vercel.app`
+
+If your Vercel URL is different, update line 824-827 in `server.cjs`
 
 ## Fixes Applied
 

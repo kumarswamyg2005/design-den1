@@ -821,15 +821,33 @@ const createDesignerEarning = async (orderId, designerId, orderAmount) => {
 };
 
 // Middleware
+const allowedOrigins = [
+  /^http:\/\/localhost:\d+$/, // Local development
+  "https://design-den1.vercel.app", // Vercel production
+  /^https:\/\/design-den1.*\.vercel\.app$/, // Vercel preview deployments
+];
+
 app.use(
   cors({
     origin: function (origin, callback) {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      // Allow localhost on any port
-      if (origin.match(/^http:\/\/localhost:\d+$/)) {
+
+      // Check if origin matches any allowed pattern
+      const isAllowed = allowedOrigins.some((pattern) => {
+        if (typeof pattern === "string") {
+          return origin === pattern;
+        } else if (pattern instanceof RegExp) {
+          return pattern.test(origin);
+        }
+        return false;
+      });
+
+      if (isAllowed) {
         return callback(null, true);
       }
+
+      console.log("⚠️  CORS blocked origin:", origin);
       callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
