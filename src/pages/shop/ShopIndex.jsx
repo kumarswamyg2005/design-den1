@@ -96,9 +96,10 @@ const ShopIndex = () => {
       <ScrollReveal>
         <div className="row mb-5 text-center">
           <div className="col-md-8 mx-auto">
-            <h1 className="display-4 fw-bold mb-3">Shop Ready-Made Designs</h1>
+            <h1 className="display-4 fw-bold mb-3">Shop Ready-Made Design</h1>
             <p className="lead text-muted">
-              Browse our exclusive collection of pre-designed clothing. Quality materials and expert craftsmanship in every piece.
+              Browse our exclusive collection of pre-designed clothing. Quality
+              materials and expert craftsmanship in every piece.
             </p>
           </div>
         </div>
@@ -120,7 +121,10 @@ const ShopIndex = () => {
                     style={{ backgroundColor: "rgba(31, 26, 23, 0.38)" }}
                   ></div>
                   <div className="position-absolute bottom-0 start-0 p-4">
-                    <Link to="/shop?gender=Men" className="btn btn-light px-4 fw-bold">
+                    <Link
+                      to="/shop?gender=Men"
+                      className="btn btn-light px-4 fw-bold"
+                    >
                       Shop Men
                     </Link>
                   </div>
@@ -142,7 +146,10 @@ const ShopIndex = () => {
                     style={{ backgroundColor: "rgba(31, 26, 23, 0.38)" }}
                   ></div>
                   <div className="position-absolute bottom-0 start-0 p-4">
-                    <Link to="/shop?gender=Women" className="btn btn-light px-4 fw-bold">
+                    <Link
+                      to="/shop?gender=Women"
+                      className="btn btn-light px-4 fw-bold"
+                    >
                       Shop Women
                     </Link>
                   </div>
@@ -163,14 +170,16 @@ const ShopIndex = () => {
                     src={`${API_BASE_URL}/images/mens-collection-banner.webp`}
                     className="img-fluid w-100"
                     alt="Men's Collection"
-                    style={{ maxHeight: '300px', objectFit: 'cover' }}
+                    style={{ maxHeight: "300px", objectFit: "cover" }}
                   />
                   <div
                     className="position-absolute bottom-0 start-0 w-100 h-100"
                     style={{ backgroundColor: "rgba(31, 26, 23, 0.34)" }}
                   ></div>
                   <div className="position-absolute top-50 start-0 translate-middle-y p-5">
-                      <h2 className="display-4 fw-bold text-white mb-0">Men's Collection</h2>
+                    <h2 className="display-4 fw-bold text-white mb-0">
+                      Men's Collection
+                    </h2>
                   </div>
                 </div>
               </div>
@@ -189,14 +198,16 @@ const ShopIndex = () => {
                     src={`${API_BASE_URL}/images/womens-collection-banner.webp`}
                     className="img-fluid w-100"
                     alt="Women's Collection"
-                    style={{ maxHeight: '300px', objectFit: 'cover' }}
+                    style={{ maxHeight: "300px", objectFit: "cover" }}
                   />
                   <div
                     className="position-absolute bottom-0 start-0 w-100 h-100"
                     style={{ backgroundColor: "rgba(31, 26, 23, 0.34)" }}
                   ></div>
                   <div className="position-absolute top-50 start-0 translate-middle-y p-5">
-                      <h2 className="display-4 fw-bold text-white mb-0">Women's Collection</h2>
+                    <h2 className="display-4 fw-bold text-white mb-0">
+                      Women's Collection
+                    </h2>
                   </div>
                 </div>
               </div>
@@ -210,185 +221,185 @@ const ShopIndex = () => {
         <div className="col-md-3 mb-4">
           <ScrollReveal delay="delay-2">
             <div className="card shadow-sm border-0 rounded-4">
-            <div className="card-header">
-              <h3 className="h5 mb-0">Filters</h3>
-            </div>
-            <div className="card-body">
-              {/* Category Filter */}
-              <div className="mb-3">
-                <label className="form-label fw-bold">Category</label>
-                <div className="d-grid gap-2">
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="category"
-                      id="categoryAll"
-                      checked={!filters.category}
-                      onChange={() => handleFilterChange("category", "")}
-                    />
-                    <label className="form-check-label" htmlFor="categoryAll">
-                      All Categories
-                    </label>
-                  </div>
-                  {categories.map((category) => (
-                    <div className="form-check" key={category}>
+              <div className="card-header">
+                <h3 className="h5 mb-0">Filters</h3>
+              </div>
+              <div className="card-body">
+                {/* Category Filter */}
+                <div className="mb-3">
+                  <label className="form-label fw-bold">Category</label>
+                  <div className="d-grid gap-2">
+                    <div className="form-check">
                       <input
                         className="form-check-input"
                         type="radio"
                         name="category"
-                        id={`category${category}`}
-                        checked={filters.category === category}
-                        onChange={() =>
-                          handleFilterChange("category", category)
-                        }
+                        id="categoryAll"
+                        checked={!filters.category}
+                        onChange={() => handleFilterChange("category", "")}
                       />
-                      <label
-                        className="form-check-label"
-                        htmlFor={`category${category}`}
-                      >
-                        {category}
+                      <label className="form-check-label" htmlFor="categoryAll">
+                        All Categories
                       </label>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <hr />
-
-              {/* Gender Filter */}
-              <div className="mb-3">
-                <label className="form-label fw-bold">Gender</label>
-                <div className="d-grid gap-2">
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="gender"
-                      id="genderAll"
-                      checked={!filters.gender}
-                      onChange={() => handleFilterChange("gender", "")}
-                    />
-                    <label className="form-check-label" htmlFor="genderAll">
-                      All
-                    </label>
+                    {categories.map((category) => (
+                      <div className="form-check" key={category}>
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="category"
+                          id={`category${category}`}
+                          checked={filters.category === category}
+                          onChange={() =>
+                            handleFilterChange("category", category)
+                          }
+                        />
+                        <label
+                          className="form-check-label"
+                          htmlFor={`category${category}`}
+                        >
+                          {category}
+                        </label>
+                      </div>
+                    ))}
                   </div>
-                  {genders.map((gender) => (
-                    <div className="form-check" key={gender}>
+                </div>
+
+                <hr />
+
+                {/* Gender Filter */}
+                <div className="mb-3">
+                  <label className="form-label fw-bold">Gender</label>
+                  <div className="d-grid gap-2">
+                    <div className="form-check">
                       <input
                         className="form-check-input"
                         type="radio"
                         name="gender"
-                        id={`gender${gender}`}
-                        checked={filters.gender === gender}
-                        onChange={() => handleFilterChange("gender", gender)}
+                        id="genderAll"
+                        checked={!filters.gender}
+                        onChange={() => handleFilterChange("gender", "")}
                       />
-                      <label
-                        className="form-check-label"
-                        htmlFor={`gender${gender}`}
-                      >
-                        {gender}
+                      <label className="form-check-label" htmlFor="genderAll">
+                        All
                       </label>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <hr />
-
-              {/* Size Filter */}
-              <div className="mb-3">
-                <label className="form-label fw-bold">Size</label>
-                <div className="d-grid gap-2">
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="size"
-                      id="sizeAll"
-                      checked={!filters.size}
-                      onChange={() => handleFilterChange("size", "")}
-                    />
-                    <label className="form-check-label" htmlFor="sizeAll">
-                      All Sizes
-                    </label>
+                    {genders.map((gender) => (
+                      <div className="form-check" key={gender}>
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="gender"
+                          id={`gender${gender}`}
+                          checked={filters.gender === gender}
+                          onChange={() => handleFilterChange("gender", gender)}
+                        />
+                        <label
+                          className="form-check-label"
+                          htmlFor={`gender${gender}`}
+                        >
+                          {gender}
+                        </label>
+                      </div>
+                    ))}
                   </div>
-                  {sizes.map((size) => (
-                    <div className="form-check" key={size}>
+                </div>
+
+                <hr />
+
+                {/* Size Filter */}
+                <div className="mb-3">
+                  <label className="form-label fw-bold">Size</label>
+                  <div className="d-grid gap-2">
+                    <div className="form-check">
                       <input
                         className="form-check-input"
                         type="radio"
                         name="size"
-                        id={`size${size}`}
-                        checked={filters.size === size}
-                        onChange={() => handleFilterChange("size", size)}
+                        id="sizeAll"
+                        checked={!filters.size}
+                        onChange={() => handleFilterChange("size", "")}
                       />
-                      <label
-                        className="form-check-label"
-                        htmlFor={`size${size}`}
-                      >
-                        {size}
+                      <label className="form-check-label" htmlFor="sizeAll">
+                        All Sizes
                       </label>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <hr />
-
-              {/* Price Range Filter */}
-              <div className="mb-3">
-                <label className="form-label fw-bold">Price Range</label>
-                <div className="row g-2">
-                  <div className="col">
-                    <input
-                      type="number"
-                      className="form-control"
-                      placeholder="Min"
-                      value={filters.minPrice}
-                      onChange={(e) =>
-                        setFilters({ ...filters, minPrice: e.target.value })
-                      }
-                      min="0"
-                    />
-                  </div>
-                  <div className="col">
-                    <input
-                      type="number"
-                      className="form-control"
-                      placeholder="Max"
-                      value={filters.maxPrice}
-                      onChange={(e) =>
-                        setFilters({ ...filters, maxPrice: e.target.value })
-                      }
-                    />
+                    {sizes.map((size) => (
+                      <div className="form-check" key={size}>
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="size"
+                          id={`size${size}`}
+                          checked={filters.size === size}
+                          onChange={() => handleFilterChange("size", size)}
+                        />
+                        <label
+                          className="form-check-label"
+                          htmlFor={`size${size}`}
+                        >
+                          {size}
+                        </label>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="d-grid mt-2">
+
+                <hr />
+
+                {/* Price Range Filter */}
+                <div className="mb-3">
+                  <label className="form-label fw-bold">Price Range</label>
+                  <div className="row g-2">
+                    <div className="col">
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Min"
+                        value={filters.minPrice}
+                        onChange={(e) =>
+                          setFilters({ ...filters, minPrice: e.target.value })
+                        }
+                        min="0"
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Max"
+                        value={filters.maxPrice}
+                        onChange={(e) =>
+                          setFilters({ ...filters, maxPrice: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="d-grid mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={applyPriceFilter}
+                    >
+                      Apply Price
+                    </button>
+                  </div>
+                </div>
+
+                <hr />
+
+                {/* Reset Filters */}
+                <div className="d-grid">
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-primary"
-                    onClick={applyPriceFilter}
+                    className="btn btn-outline-secondary"
+                    onClick={resetFilters}
                   >
-                    Apply Price
+                    Reset All Filters
                   </button>
                 </div>
               </div>
-
-              <hr />
-
-              {/* Reset Filters */}
-              <div className="d-grid">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={resetFilters}
-                >
-                  Reset All Filters
-                </button>
-              </div>
             </div>
-          </div>
           </ScrollReveal>
         </div>
 
@@ -397,28 +408,30 @@ const ShopIndex = () => {
           <ScrollReveal delay="delay-3">
             {/* Sort Options */}
             <div className="card shadow-sm mb-4 border-0 rounded-4">
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <span className="text-muted">
-                    {products.length} products found
-                  </span>
-                </div>
-                <div className="d-flex align-items-center">
-                  <label className="me-2">Sort by:</label>
-                  <select
-                    className="form-select form-select-sm"
-                    value={filters.sort}
-                    onChange={(e) => handleFilterChange("sort", e.target.value)}
-                  >
-                    <option value="newest">Newest</option>
-                    <option value="price-low-high">Price: Low to High</option>
-                    <option value="price-high-low">Price: High to Low</option>
-                  </select>
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span className="text-muted">
+                      {products.length} products found
+                    </span>
+                  </div>
+                  <div className="d-flex align-items-center">
+                    <label className="me-2">Sort by:</label>
+                    <select
+                      className="form-select form-select-sm"
+                      value={filters.sort}
+                      onChange={(e) =>
+                        handleFilterChange("sort", e.target.value)
+                      }
+                    >
+                      <option value="newest">Newest</option>
+                      <option value="price-low-high">Price: Low to High</option>
+                      <option value="price-high-low">Price: High to Low</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           </ScrollReveal>
 
           {/* Products */}
@@ -445,9 +458,17 @@ const ShopIndex = () => {
                         }`}
                         className="card-img-top"
                         alt={product.name}
-                        style={{ height: "250px", objectFit: "cover", transition: "transform 0.5s ease" }}
-                        onMouseOver={(e) => { e.currentTarget.style.transform = "scale(1.05)"; }}
-                        onMouseOut={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+                        style={{
+                          height: "250px",
+                          objectFit: "cover",
+                          transition: "transform 0.5s ease",
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.transform = "scale(1.05)";
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.transform = "scale(1)";
+                        }}
                         onError={(e) => {
                           // Prevent infinite loop by checking if already using fallback
                           if (!e.target.dataset.fallback) {
@@ -457,7 +478,9 @@ const ShopIndex = () => {
                         }}
                       />
                       <div className="card-body d-flex flex-column bg-white">
-                        <h5 className="card-title fw-bold mb-1">{product.name}</h5>
+                        <h5 className="card-title fw-bold mb-1">
+                          {product.name}
+                        </h5>
                         <p className="card-text text-muted small mb-3">
                           {product.category} • {product.gender}
                         </p>
