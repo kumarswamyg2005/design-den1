@@ -96,7 +96,7 @@ const ShopIndex = () => {
       <ScrollReveal>
         <div className="row mb-5 text-center">
           <div className="col-md-8 mx-auto">
-            <h1 className="display-4 fw-bold mb-3">Shop Ready-Made Design</h1>
+            <h1 className="display-4 fw-bold mb-3">Shop Ready-Made Designs</h1>
             <p className="lead text-muted">
               Browse our exclusive collection of pre-designed clothing. Quality
               materials and expert craftsmanship in every piece.
